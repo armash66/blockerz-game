@@ -66,25 +66,10 @@ class GameState extends ChangeNotifier {
     _initializePieces();
   }
 
-  // Powerup: Add to Inventory
-  void addPowerupToInventory(Powerup powerup) {
+  // Powerup: Add to Inventory & Complete Selection
+  void selectPowerup(Powerup powerup) {
+    print("Selecting Powerup: ${powerup.name} for $_currentPlayer");
     _inventory[_currentPlayer]?.add(powerup);
-    notifyListeners();
-  }
-
-  void completePowerupSelection() {
-    // We don't reset total turns, just mark phase as done?
-    // Wait, isPowerupSelectionPhase relies on turns % 3 == 0.
-    // If we don't change state, it stays true.
-    // Hack: We can just let it be?
-    // No, UI will keep showing overlay.
-    // Solution: Add a boolean `_hasSelectedPowerupForTurn`?
-    // Or just increment turn AFTER move?
-    // Current logic: Turns increment at END of turn.
-    // So Frame 1 of new turn: turns % 3 == 0 -> Overlay shows.
-    // User selects -> Overlay closes.
-    // We need a way to say "Selection Done".
-    // Let's add `_powerupSelectedThisTurn` flag.
     _powerupSelectedThisTurn = true;
     notifyListeners();
   }

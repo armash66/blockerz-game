@@ -233,8 +233,7 @@ class _GameScreenState extends State<GameScreen> {
           if (widget.enablePowerups && _gameState.isPowerupSelectionPhase)
             PowerupDeckOverlay(
               onSelect: (powerup) {
-                _gameState.addPowerupToInventory(powerup);
-                _gameState.completePowerupSelection();
+                _gameState.selectPowerup(powerup);
               },
             ),
         ],
