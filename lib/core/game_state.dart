@@ -72,142 +72,132 @@ class GameState extends ChangeNotifier {
     final type = _activePowerup!.type;
 
     switch (type) {
-      case PowerupType.flash:
-        success = _applyFlash(target);
+      case PowerupType.highJump:
+        success = _applyHighJump(target);
         break;
-      case PowerupType.swap:
-        success = _applySwap(target);
+      case PowerupType.bomb:
+        success = _applyBomb(target);
         break;
-      case PowerupType.push:
-        success = _applyPush(target);
+      case PowerupType.shield:
+        success = _applyShield();
         break;
       case PowerupType.doubleMove:
-        // This is a status effect, not a target effect.
-        // Should be applied immediately on activation?
-        // Or applied to the NEXT move?
-        // Let's say: Activate -> Next Move counts as 1/2.
-        // Actually, let's treat it as: Click Powerup -> "Double Move Active" -> Move -> Move again.
+        // Handled in _performMove
         success = false;
         break;
     }
 
     if (success) {
+      // Consume Powerup and End Turn (unless Double Move / Shield special case)
       _inventory[_currentPlayer]?.remove(_activePowerup);
       _activePowerup = null;
-      _endTurn(); // Most powerups consume the turn?
-      // "Flash": Teleport is a move. -> End Turn.
-      // "Swap": Swap is a move. -> End Turn.
-      // "Push": Push is an attack. -> End Turn.
-      // "Double Move": Special case.
+      // Note: High Jump moves piece -> End Turn called in move.
+      // Bomb -> End Turn called in apply.
+      // Shield -> Instant effect -> End Turn?
+      if (type == PowerupType.shield) _endTurn();
     }
     return success;
   }
 
-  // Implement Powerup Logics
-  bool _applyFlash(Cell target) {
-    if (!target.isEmpty) return false;
-    // Range 2 check from ANY friendly piece? Or selected piece?
-    // "Teleport to any empty tile within range 2" implies moving a SPECIFIC piece.
-    // So we need a selected piece FIRST.
+  // --- New Powerup Implementations ---
+
+  // 1. High Jump: Range 3, Ignores Obstacles
+  bool _applyHighJump(Cell target) {
     if (_selectedAndActiveCell == null) return false;
+    // Must be empty
+    if (!target.isEmpty) return false;
 
     final from = _selectedAndActiveCell!;
+    // Range Check (Manhattan Distance <= 3)
     final dr = (from.row - target.row).abs();
     final dc = (from.col - target.col).abs();
 
-    if (dr <= 2 && dc <= 2) {
-      _performMove(from, target); // Standard move logic but ignores obstacles?
-      // Actually _performMove blocks the old square.
-      // Flash should probably behave like a move? Yes.
+    // Logic: Range 3.
+    if ((dr + dc) <= 3) {
+      _performMove(from, target);
       return true;
     }
     return false;
   }
 
-  bool _applySwap(Cell target) {
-    if (_selectedAndActiveCell == null) return false;
-    final from = _selectedAndActiveCell!;
+  // 2. Bomb: Destroy Blocked Cell
+  bool _applyBomb(Cell target) {
+    // Target must be BLOCKED
+    if (!target.isBlocked) return false;
 
-    // Must be adjacent
-    final dr = (from.row - target.row).abs();
-    final dc = (from.col - target.col).abs();
-    if ((dr + dc) != 1) return false;
+    // Destroy it!
+    target.type = CellType.empty;
 
-    // Logic: Swap contents
-    final targetOwner = target.owner;
-    final fromOwner = from.owner;
-
-    // Update grid
-    from.owner = targetOwner;
-    if (targetOwner == null)
-      from.type =
-          CellType.empty; // If swapping with empty (pointless but valid?)
-
-    target.owner = fromOwner;
-    target.type = CellType.occupied;
-
-    // Swap does NOT block the old square (since it's still occupied by the other unit)
-    // It just ends the turn.
-
-    _selectedAndActiveCell = null;
+    // Bomb ends turn immediately
+    _inventory[_currentPlayer]?.remove(Powerup.get(PowerupType.bomb));
     _activePowerup = null;
-    _inventory[_currentPlayer]?.remove(Powerup.get(PowerupType.swap));
-
+    _selectedAndActiveCell = null;
     _endTurn();
     return true;
   }
 
-  bool _applyPush(Cell target) {
-    // Push needs a selected piece (pusher) and a target piece (victim)
-    if (_selectedAndActiveCell == null) return false;
-    final pusher = _selectedAndActiveCell!;
+  // 3. Shield: Immune to blocking for next turn
+  // We need a way to track "Immunity".
+  // Let's add `_isShielded` state.
+  bool _isShielded = false; // Current player is shielded?
+  // Actually, shield protects the TILE you leave from being blocked.
+  // Or protects YOU from being blocked?
+  // "Immune to being blocked next turn" ->
+  // Interpretation: The tile I move FROM is NOT blocked.
+  // Implementation: Set flag, then in _performMove, skip block().
 
-    // Target must be occupied by ENEMY
-    if (!target.isOccupied || target.owner == _currentPlayer) return false;
+  bool _applyShield() {
+    _isShielded = true;
+    // Shield doesn't end turn, it applies to the MOVE.
+    // So we just set state and return false (to not consume yet? No, consume now).
+    // Wait, if we consume now, activePowerup becomes null.
+    // Let's keep it active until move?
+    // Easier: Just set a flag "Shield Active" and consume immediately.
 
-    // Must be adjacent
-    final dr = target.row - pusher.row;
-    final dc = target.col - pusher.col;
-    if ((dr.abs() + dc.abs()) != 1) return false;
-
-    // Calculate push destination
-    final pushR = target.row + dr;
-    final pushC = target.col + dc;
-
-    // Check bounds and if empty
-    if (pushR >= 0 && pushR < boardSize && pushC >= 0 && pushC < boardSize) {
-      final dest = grid[pushR][pushC];
-      if (dest.isEmpty) {
-        // Move enemy
-        dest.occupy(target.owner!);
-        target.clear(); // Empty the spot they were pushed from?
-        // Or does pusher move into it? "Push" usually just knocks back.
-        // Let's say it just knocks back.
-
-        _selectedAndActiveCell = null;
-        _activePowerup = null;
-        _inventory[_currentPlayer]?.remove(Powerup.get(PowerupType.push));
-        _endTurn();
-        return true;
-      }
-    }
-    return false;
+    // BUT user has to move AFTER clicking shield.
+    // So: Click Shield -> Active.
+    // Then Move -> Check Active -> Skip Block -> Consume.
+    return false; // Handled in performMove
   }
 
   void _performMove(Cell from, Cell to) {
     // Move Piece
     to.occupy(_currentPlayer);
-    from.block();
+
+    // Block the OLD square (Core Mechanic)
+    // UNLESS Shield is active!
+    // Or High Jump? (High Jump still blocks old square usually).
+
+    bool skipBlock = false;
+
+    // Check if player has shield active
+    if (_isShielded) {
+      skipBlock = true;
+      _isShielded = false; // Consume shield
+    } else if (_activePowerup?.type == PowerupType.shield) {
+      // Fallback or double check if active powerup is still there?
+      // Actually applyShield sets _isShielded.
+      // So we rely on _isShielded.
+    }
+
+    if (!skipBlock) {
+      from.block();
+    }
 
     // Check Double Move
     if (_activePowerup?.type == PowerupType.doubleMove) {
       // Don't end turn yet!
-      // Consume powerup
       _inventory[_currentPlayer]?.remove(_activePowerup);
       _activePowerup = null;
       _selectedAndActiveCell = null; // Clear selection
       notifyListeners();
       return;
+    }
+
+    // High Jump Logic (Consume if used)
+    if (_activePowerup?.type == PowerupType.highJump) {
+      _inventory[_currentPlayer]?.remove(_activePowerup);
+      _activePowerup = null;
     }
 
     _selectedAndActiveCell = null;

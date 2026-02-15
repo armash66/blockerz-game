@@ -205,6 +205,9 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ),
 
+                // Opponent Info (Player 2 - Top)
+                _buildPlayerInfo(Player.player2, isTop: true),
+
                 // Game Board
                 Expanded(
                   child: Center(
@@ -290,49 +293,60 @@ class _GameScreenState extends State<GameScreen> {
                       final powerup = inventory[index];
                       final isActive = _gameState.activePowerup == powerup;
 
-                      return GestureDetector(
-                        onTap: () {
-                          // Only current player can activate
-                          // (AI logic would need to call activatePowerup too)
-                          if (_gameState.currentPlayer == Player.player2 &&
-                              widget.isPvAI) return;
-                          _gameState.activatePowerup(powerup);
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppTheme.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isActive ? powerup.color : Colors.white10,
-                              width: isActive ? 2 : 1,
-                            ),
-                            boxShadow: isActive
-                                ? [
-                                    BoxShadow(
-                                      color: powerup.color.withOpacity(0.4),
-                                      blurRadius: 8,
-                                    )
-                                  ]
-                                : [],
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(powerup.icon,
-                                  color: powerup.color, size: 24),
-                              const SizedBox(width: 8),
-                              Text(
-                                powerup.name,
-                                style: AppTheme.body.copyWith(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: isActive
-                                      ? powerup.color
-                                      : AppTheme.textPrimary,
-                                ),
+                      return Tooltip(
+                        message: powerup.description,
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black87,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        textStyle: AppTheme.body
+                            .copyWith(color: Colors.white, fontSize: 10),
+                        child: GestureDetector(
+                          onTap: () {
+                            // Only current player can activate
+                            // (AI logic would need to call activatePowerup too)
+                            if (_gameState.currentPlayer == Player.player2 &&
+                                widget.isPvAI) return;
+                            _gameState.activatePowerup(powerup);
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppTheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color:
+                                    isActive ? powerup.color : Colors.white10,
+                                width: isActive ? 2 : 1,
                               ),
-                            ],
+                              boxShadow: isActive
+                                  ? [
+                                      BoxShadow(
+                                        color: powerup.color.withOpacity(0.4),
+                                        blurRadius: 8,
+                                      )
+                                    ]
+                                  : [],
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(powerup.icon,
+                                    color: powerup.color, size: 24),
+                                const SizedBox(width: 8),
+                                Text(
+                                  powerup.name,
+                                  style: AppTheme.body.copyWith(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: isActive
+                                        ? powerup.color
+                                        : AppTheme.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 enum PowerupType {
-  flash, // Teleport to any empty tile within range 2
-  swap, // Swap with any adjacent unit
-  push, // Push adjacent enemy 1 tile
+  highJump, // Jump to any empty tile within range 3 (ignore obstacles)
+  bomb, // Destroy a targeted blocked cell
+  shield, // Immune to being blocked next turn
   doubleMove, // Move twice in one turn
 }
 
@@ -24,25 +24,25 @@ class Powerup {
 
   static const List<Powerup> all = [
     Powerup(
-      type: PowerupType.flash,
-      name: "Flash",
-      description: "Teleport to any empty tile within range 2.",
-      icon: Icons.flash_on_rounded,
+      type: PowerupType.highJump,
+      name: "High Jump",
+      description: "Leap to any empty tile within Range 3. Ignores obstacles!",
+      icon: Icons.flight_takeoff_rounded,
       color: Colors.amber,
     ),
     Powerup(
-      type: PowerupType.swap,
-      name: "Swap",
-      description: "Swap places with any adjacent unit.",
-      icon: Icons.swap_horiz_rounded,
-      color: Colors.blueAccent,
+      type: PowerupType.bomb,
+      name: "Bomb",
+      description: "Destroy a Blocked Cell to clear a path.",
+      icon: Icons.dangerous_rounded,
+      color: Colors.redAccent,
     ),
     Powerup(
-      type: PowerupType.push,
-      name: "Push",
-      description: "Push an adjacent enemy 1 tile away.",
-      icon: Icons.published_with_changes_rounded,
-      color: Colors.deepOrangeAccent,
+      type: PowerupType.shield,
+      name: "Shield",
+      description: "Your previous tile cannot be blocked next turn.",
+      icon: Icons.security_rounded,
+      color: Colors.cyanAccent,
     ),
     Powerup(
       type: PowerupType.doubleMove,

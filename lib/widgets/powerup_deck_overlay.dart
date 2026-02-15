@@ -47,7 +47,7 @@ class _PowerupDeckOverlayState extends State<PowerupDeckOverlay>
 
   Powerup _generateRandomPowerup() {
     final random = Random();
-    final all = Powerup.all;
+    const all = Powerup.all;
     return all[random.nextInt(all.length)];
   }
 
@@ -85,7 +85,7 @@ class _PowerupDeckOverlayState extends State<PowerupDeckOverlay>
                 color: Colors.white,
                 letterSpacing: 2.0,
                 shadows: [
-                  Shadow(color: AppTheme.accent, blurRadius: 20),
+                  const Shadow(color: AppTheme.accent, blurRadius: 20),
                 ],
               ),
             ),

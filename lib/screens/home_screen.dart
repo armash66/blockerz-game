@@ -39,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Logo / Title Section
-                    Icon(
+                    const Icon(
                       Icons.grid_4x4_rounded,
                       size: 80,
                       color: AppTheme.accent,
