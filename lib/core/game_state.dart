@@ -2,7 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'board.dart';
 
 class GameState extends ChangeNotifier {
-  // 5x5 Grid
+  // Grid
+  final int boardSize;
   final List<List<Cell>> grid;
 
   // Turn Management
@@ -18,14 +19,14 @@ class GameState extends ChangeNotifier {
   Cell? _selectedAndActiveCell;
   Cell? get selectedCell => _selectedAndActiveCell;
 
-  GameState() : grid = _createGrid() {
+  GameState({this.boardSize = 5}) : grid = _createGrid(boardSize) {
     _initializePieces();
   }
 
-  // 1. Initialize 5x5 Grid
-  static List<List<Cell>> _createGrid() {
-    return List.generate(5, (row) {
-      return List.generate(5, (col) {
+  // 1. Initialize Grid
+  static List<List<Cell>> _createGrid(int size) {
+    return List.generate(size, (row) {
+      return List.generate(size, (col) {
         return Cell(row: row, col: col);
       });
     });
@@ -33,13 +34,52 @@ class GameState extends ChangeNotifier {
 
   // 2. Setup Starting Positions
   void _initializePieces() {
-    // Player 1 (You): Bottom Corners (4,0) and (4,4)
-    grid[4][0].occupy(Player.player1);
-    grid[4][4].occupy(Player.player1);
+    int piecesPerPlayer = 2; // Default 5x5
+    if (boardSize == 7) piecesPerPlayer = 3;
+    if (boardSize == 9) piecesPerPlayer = 4;
 
-    // Player 2 (Opponent): Top Corners (0,0) and (0,4)
-    grid[0][0].occupy(Player.player2);
-    grid[0][4].occupy(Player.player2);
+    // Corner Logic for N pieces?
+    // 5x5 (2): Corners (0,0 & 0,4) vs (4,0 & 4,4)
+    // 7x7 (3): Corners + Middle Edge? or Back Row?
+    // Let's use Back Row logic centered.
+
+    // Player 2 (Top)
+    for (int i = 0; i < piecesPerPlayer; i++) {
+      // Distribute along the back row (row 0)
+      // For 2 pieces: 0, Size-1 (Corners) - Current logic
+      // For 3 pieces: 0, Mid, Size-1? or 0, 1, 2?
+      // Let's space them out.
+
+      int col;
+      if (piecesPerPlayer == 2) {
+        col = i == 0 ? 0 : boardSize - 1;
+      } else if (piecesPerPlayer == 3) {
+        if (i == 0)
+          col = 0;
+        else if (i == 1)
+          col = boardSize ~/ 2;
+        else
+          col = boardSize - 1;
+      } else {
+        // 4 pieces (9x9)
+        // 0, 3, 5, 8?
+        // Even spacing: 0, size/3, 2*size/3, size-1?
+        // Let's just do Corners + Inner Corners?
+        // 0, 1, size-2, size-1?
+        // Or 0, 2, 6, 8?
+        if (i == 0)
+          col = 0;
+        else if (i == 1)
+          col = 2;
+        else if (i == 2)
+          col = boardSize - 3;
+        else
+          col = boardSize - 1;
+      }
+
+      grid[0][col].occupy(Player.player2);
+      grid[boardSize - 1][col].occupy(Player.player1);
+    }
   }
 
   // 3. Selection Logic
@@ -122,7 +162,7 @@ class GameState extends ChangeNotifier {
     final c = from.col + dCol;
 
     // Check Bounds
-    if (r < 0 || r >= 5 || c < 0 || c >= 5) return false;
+    if (r < 0 || r >= boardSize || c < 0 || c >= boardSize) return false;
 
     // Check if Empty
     return grid[r][c].isEmpty;

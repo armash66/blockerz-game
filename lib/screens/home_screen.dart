@@ -93,11 +93,14 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // Theme Toggle (Bottom Right)
+          // Theme Toggle (Top Right)
           Positioned(
-            bottom: 24,
+            top: 24,
             right: 24,
-            child: ThemeToggleBtn(onToggle: () => setState(() {})),
+            child: SafeArea(
+              // Ensure it respects notch/status bar
+              child: ThemeToggleBtn(onToggle: () => setState(() {})),
+            ),
           ),
         ],
       ),

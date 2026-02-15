@@ -10,13 +10,15 @@ import '../core/ai_player.dart'; // Import added at top
 class GameScreen extends StatefulWidget {
   final bool isPvAI;
   final bool enablePowerups;
-  final AIDifficulty difficulty; // Added
+  final AIDifficulty difficulty;
+  final int boardSize; // Added
 
   const GameScreen({
     super.key,
     required this.isPvAI,
     required this.enablePowerups,
-    this.difficulty = AIDifficulty.easy, // Default
+    this.difficulty = AIDifficulty.easy,
+    this.boardSize = 5, // Default
   });
 
   @override
@@ -30,8 +32,8 @@ class _GameScreenState extends State<GameScreen> {
   @override
   void initState() {
     super.initState();
-    _gameState = GameState();
-    _aiPlayer = AIPlayer(difficulty: widget.difficulty); // Pass difficulty
+    _gameState = GameState(boardSize: widget.boardSize); // Pass size
+    _aiPlayer = AIPlayer(difficulty: widget.difficulty);
     _gameState.addListener(_onGameStateChanged);
   }
 
@@ -99,6 +101,12 @@ class _GameScreenState extends State<GameScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('BLOCKERZ'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: ThemeToggleBtn(onToggle: () => setState(() {})),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Center(
@@ -119,20 +127,29 @@ class _GameScreenState extends State<GameScreen> {
                   Container(
                     decoration: BoxDecoration(
                       color: AppTheme.currentBoardTheme.borderColor,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(16), // Rounded Board
+                      boxShadow: [
+                        // Depth
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                       border: Border.all(
                           color: AppTheme.currentBoardTheme.borderColor,
-                          width: 4),
+                          width: 8), // Thicker Border
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(8),
                       child: AspectRatio(
                         aspectRatio: 1,
                         child: Column(
-                          children: List.generate(5, (row) {
+                          children: List.generate(_gameState.boardSize, (row) {
                             return Expanded(
                               child: Row(
-                                children: List.generate(5, (col) {
+                                children:
+                                    List.generate(_gameState.boardSize, (col) {
                                   return Expanded(child: _buildCell(row, col));
                                 }),
                               ),
@@ -153,7 +170,6 @@ class _GameScreenState extends State<GameScreen> {
           ),
         ),
       ),
-      floatingActionButton: ThemeToggleBtn(onToggle: () => setState(() {})),
     );
   }
 

@@ -16,7 +16,8 @@ class ModeSelectScreen extends StatefulWidget {
 class _ModeSelectScreenState extends State<ModeSelectScreen> {
   int _selectedMode = 0; // 0: PvP, 1: PvAI
   bool _powerupsEnabled = false;
-  AIDifficulty _selectedDifficulty = AIDifficulty.easy; // Difficulty State
+  AIDifficulty _selectedDifficulty = AIDifficulty.easy;
+  int _boardSize = 5; // 5, 7, 9
 
   @override
   Widget build(BuildContext context) {
@@ -27,10 +28,12 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 24, right: 24),
-        child: ThemeToggleBtn(onToggle: () => setState(() {})),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: ThemeToggleBtn(onToggle: () => setState(() {})),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -116,65 +119,128 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
 
             const SizedBox(height: 30),
 
-            // Theme Selection
-            Text(
-              'BOARD STYLE',
-              style: AppTheme.body.copyWith(letterSpacing: 2.0),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 60,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                itemCount: BoardTheme.all.length,
-                separatorBuilder: (c, i) => const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  final theme = BoardTheme.all[index];
-                  final isSelected = AppTheme.currentBoardTheme == theme;
-
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        AppTheme.currentBoardTheme = theme;
-                      });
-                    },
-                    child: Container(
-                      width: 60,
-                      decoration: BoxDecoration(
-                        color: theme.gridDark,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isSelected ? AppTheme.accent : Colors.white24,
-                          width: isSelected ? 3 : 1,
-                        ),
-                        boxShadow: [
-                          if (isSelected)
-                            BoxShadow(
-                              color: AppTheme.accent.withOpacity(0.5),
-                              blurRadius: 8,
-                              spreadRadius: 2,
-                            ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Container(
-                          width: 20,
-                          height: 20,
+            // Customization Section
+            Column(
+              children: [
+                // Style Selector
+                Text(
+                  'BOARD STYLE',
+                  style: AppTheme.body.copyWith(
+                      letterSpacing: 2.0,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: BoardTheme.all.map((theme) {
+                      final isSelected = AppTheme.currentBoardTheme == theme;
+                      return GestureDetector(
+                        onTap: () =>
+                            setState(() => AppTheme.currentBoardTheme = theme),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          width: 48,
+                          height: 48,
                           decoration: BoxDecoration(
-                            // FIX: Check if theme is Neon (Dark Grid), if so make dot WHITE
-                            color: theme.gridLight == const Color(0xFF1A1A1A)
-                                ? Colors.white
-                                : theme.gridLight,
+                            color: theme.gridDark,
                             shape: BoxShape.circle,
+                            border: Border.all(
+                              color:
+                                  isSelected ? AppTheme.accent : Colors.white24,
+                              width: isSelected ? 3 : 1,
+                            ),
+                            boxShadow: [
+                              if (isSelected)
+                                BoxShadow(
+                                  color: AppTheme.accent.withOpacity(0.4),
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
+                                )
+                            ],
+                          ),
+                          child: Center(
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color:
+                                    theme.gridLight == const Color(0xFF1A1A1A)
+                                        ? Colors.white
+                                        : theme.gridLight,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Size Selector
+                Text(
+                  'BOARD SIZE',
+                  style: AppTheme.body.copyWith(
+                      letterSpacing: 2.0,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [5, 7, 9].map((size) {
+                    final isSelected = _boardSize == size;
+                    final label = size == 5
+                        ? "Small (5x5)"
+                        : (size == 7 ? "Medium (7x7)" : "Large (9x9)");
+
+                    return GestureDetector(
+                      onTap: () => setState(() => _boardSize = size),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color:
+                              isSelected ? AppTheme.accent : Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppTheme.accent
+                                : AppTheme.textSecondary.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Text(
+                          "${size}x$size",
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.white
+                                : AppTheme.textSecondary,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                    ),
-                  );
-                },
-              ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _boardSize == 5
+                      ? "Quick Match • 2 Pieces"
+                      : (_boardSize == 7
+                          ? "Standard • 3 Pieces"
+                          : "Long Match • 4 Pieces"),
+                  style: AppTheme.body
+                      .copyWith(fontSize: 11, color: AppTheme.textSecondary),
+                ),
+              ],
             ),
 
             const Spacer(),
@@ -189,6 +255,7 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
                       isPvAI: _selectedMode == 1,
                       enablePowerups: _powerupsEnabled,
                       difficulty: _selectedDifficulty,
+                      boardSize: _boardSize,
                     ),
                   ),
                 );

@@ -41,8 +41,9 @@ class AIPlayer {
 
   List<_Move> _findValidMoves(GameState state) {
     List<_Move> moves = [];
-    for (int r = 0; r < 5; r++) {
-      for (int c = 0; c < 5; c++) {
+    final size = state.boardSize;
+    for (int r = 0; r < size; r++) {
+      for (int c = 0; c < size; c++) {
         final cell = state.grid[r][c];
         if (cell.owner == Player.player2) {
           final neighbors = [
@@ -54,7 +55,7 @@ class AIPlayer {
           for (final offset in neighbors) {
             final nr = r + offset[0];
             final nc = c + offset[1];
-            if (nr >= 0 && nr < 5 && nc >= 0 && nc < 5) {
+            if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
               final target = state.grid[nr][nc];
               if (target.isEmpty) {
                 moves.add(_Move(from: cell, to: target));
@@ -76,17 +77,13 @@ class AIPlayer {
 
     _Move bestMove = moves.first;
     int bestScore = -9999;
+    final center = state.boardSize ~/ 2;
 
     for (final move in moves) {
       int score = _random.nextInt(5); // Random base to vary play slightly
 
-      // Simulate Move (conceptually)
-      // Check if moving here blocks a neighbor of opponent?
-
-      // Heuristic: Prefer center or blocking.
-
       // 1. Center Control
-      if (move.to.row == 2 && move.to.col == 2) score += 5;
+      if (move.to.row == center && move.to.col == center) score += 5;
 
       // 2. Proximity to Opponent (Aggression)
       if (_hasNeighbor(state, move.to, Player.player1)) {
@@ -103,6 +100,7 @@ class AIPlayer {
   }
 
   bool _hasNeighbor(GameState state, Cell cell, Player targetOwner) {
+    final size = state.boardSize;
     final neighbors = [
       [-1, 0],
       [1, 0],
@@ -112,7 +110,7 @@ class AIPlayer {
     for (final offset in neighbors) {
       final nr = cell.row + offset[0];
       final nc = cell.col + offset[1];
-      if (nr >= 0 && nr < 5 && nc >= 0 && nc < 5) {
+      if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
         if (state.grid[nr][nc].owner == targetOwner) return true;
       }
     }
