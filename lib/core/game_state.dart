@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'board.dart';
+import 'powerup.dart';
 
 class GameState extends ChangeNotifier {
   // Grid
@@ -14,13 +15,219 @@ class GameState extends ChangeNotifier {
   bool get isGameOver => _winner != null;
   Player get currentPlayer => _currentPlayer;
   Player? get winner => _winner;
+  // Powerup State
+  int _turnsSinceLastPowerup = 0;
+  final Map<Player, List<Powerup>> _inventory = {
+    Player.player1: [],
+    Player.player2: [],
+  };
+
+  Powerup? _activePowerup;
 
   // Selected Piece for Movement
   Cell? _selectedAndActiveCell;
   Cell? get selectedCell => _selectedAndActiveCell;
 
+  bool get isPowerupSelectionPhase =>
+      _turnsSinceLastPowerup > 0 && _turnsSinceLastPowerup % 3 == 0;
+  List<Powerup> get currentPlayerInventory => _inventory[_currentPlayer] ?? [];
+  Powerup? get activePowerup => _activePowerup;
+
   GameState({this.boardSize = 5}) : grid = _createGrid(boardSize) {
     _initializePieces();
+  }
+
+  // Powerup: Add to Inventory
+  void addPowerupToInventory(Powerup powerup) {
+    _inventory[_currentPlayer]?.add(powerup);
+    // Reset counter or just keep it?
+    // If we want it every 3 turns, we just let it grow.
+    // Or we reset it. Let's reset it to 0 after selection?
+    // No, logic is "Every 3 turns". So turns 3, 6, 9...
+    // We'll handle the phase end in UI calling "completeSelection"
+    notifyListeners();
+  }
+
+  void completePowerupSelection() {
+    _turnsSinceLastPowerup = 0; // Reset counter after selection
+    notifyListeners();
+  }
+
+  // Powerup: Activation
+  void activatePowerup(Powerup powerup) {
+    if (_activePowerup == powerup) {
+      _activePowerup = null; // Toggle off
+    } else {
+      _activePowerup = powerup;
+    }
+    _selectedAndActiveCell = null; // Clear movement selection
+    notifyListeners();
+  }
+
+  // Powerup: Execution
+  bool applyPowerup(Cell target) {
+    if (_activePowerup == null) return false;
+
+    bool success = false;
+    final type = _activePowerup!.type;
+
+    switch (type) {
+      case PowerupType.flash:
+        success = _applyFlash(target);
+        break;
+      case PowerupType.swap:
+        success = _applySwap(target);
+        break;
+      case PowerupType.push:
+        success = _applyPush(target);
+        break;
+      case PowerupType.doubleMove:
+        // This is a status effect, not a target effect.
+        // Should be applied immediately on activation?
+        // Or applied to the NEXT move?
+        // Let's say: Activate -> Next Move counts as 1/2.
+        // Actually, let's treat it as: Click Powerup -> "Double Move Active" -> Move -> Move again.
+        success = false;
+        break;
+    }
+
+    if (success) {
+      _inventory[_currentPlayer]?.remove(_activePowerup);
+      _activePowerup = null;
+      _endTurn(); // Most powerups consume the turn?
+      // "Flash": Teleport is a move. -> End Turn.
+      // "Swap": Swap is a move. -> End Turn.
+      // "Push": Push is an attack. -> End Turn.
+      // "Double Move": Special case.
+    }
+    return success;
+  }
+
+  // Implement Powerup Logics
+  bool _applyFlash(Cell target) {
+    if (!target.isEmpty) return false;
+    // Range 2 check from ANY friendly piece? Or selected piece?
+    // "Teleport to any empty tile within range 2" implies moving a SPECIFIC piece.
+    // So we need a selected piece FIRST.
+    if (_selectedAndActiveCell == null) return false;
+
+    final from = _selectedAndActiveCell!;
+    final dr = (from.row - target.row).abs();
+    final dc = (from.col - target.col).abs();
+
+    if (dr <= 2 && dc <= 2) {
+      _performMove(from, target); // Standard move logic but ignores obstacles?
+      // Actually _performMove blocks the old square.
+      // Flash should probably behave like a move? Yes.
+      return true;
+    }
+    return false;
+  }
+
+  bool _applySwap(Cell target) {
+    if (_selectedAndActiveCell == null) return false;
+    final from = _selectedAndActiveCell!;
+
+    // Must be adjacent
+    final dr = (from.row - target.row).abs();
+    final dc = (from.col - target.col).abs();
+    if ((dr + dc) != 1) return false;
+
+    // Logic: Swap contents
+    final targetOwner = target.owner;
+    final fromOwner = from.owner;
+
+    // Update grid
+    from.owner = targetOwner;
+    if (targetOwner == null)
+      from.type =
+          CellType.empty; // If swapping with empty (pointless but valid?)
+
+    target.owner = fromOwner;
+    target.type = CellType.occupied;
+
+    // Swap does NOT block the old square (since it's still occupied by the other unit)
+    // It just ends the turn.
+
+    _selectedAndActiveCell = null;
+    _activePowerup = null;
+    _inventory[_currentPlayer]?.remove(Powerup.get(PowerupType.swap));
+
+    _endTurn();
+    return true;
+  }
+
+  bool _applyPush(Cell target) {
+    // Push needs a selected piece (pusher) and a target piece (victim)
+    if (_selectedAndActiveCell == null) return false;
+    final pusher = _selectedAndActiveCell!;
+
+    // Target must be occupied by ENEMY
+    if (!target.isOccupied || target.owner == _currentPlayer) return false;
+
+    // Must be adjacent
+    final dr = target.row - pusher.row;
+    final dc = target.col - pusher.col;
+    if ((dr.abs() + dc.abs()) != 1) return false;
+
+    // Calculate push destination
+    final pushR = target.row + dr;
+    final pushC = target.col + dc;
+
+    // Check bounds and if empty
+    if (pushR >= 0 && pushR < boardSize && pushC >= 0 && pushC < boardSize) {
+      final dest = grid[pushR][pushC];
+      if (dest.isEmpty) {
+        // Move enemy
+        dest.occupy(target.owner!);
+        target.clear(); // Empty the spot they were pushed from?
+        // Or does pusher move into it? "Push" usually just knocks back.
+        // Let's say it just knocks back.
+
+        _selectedAndActiveCell = null;
+        _activePowerup = null;
+        _inventory[_currentPlayer]?.remove(Powerup.get(PowerupType.push));
+        _endTurn();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void _performMove(Cell from, Cell to) {
+    // Move Piece
+    to.occupy(_currentPlayer);
+    from.block();
+
+    // Check Double Move
+    if (_activePowerup?.type == PowerupType.doubleMove) {
+      // Don't end turn yet!
+      // Consume powerup
+      _inventory[_currentPlayer]?.remove(_activePowerup);
+      _activePowerup = null;
+      _selectedAndActiveCell = null; // Clear selection
+      notifyListeners();
+      return;
+    }
+
+    _selectedAndActiveCell = null;
+    _endTurn();
+  }
+
+  void _endTurn() {
+    _activePowerup = null;
+    _currentPlayer = _currentPlayer.opponent;
+
+    // Increment turn counter only when Player 1 starts?
+    // Or just count "half turns"?
+    // "Every 3rd move" usually means "Every 3 rounds".
+    // Let's increment on P2 -> P1 switch?
+    if (_currentPlayer == Player.player1) {
+      _turnsSinceLastPowerup++;
+    }
+
+    _checkWinCondition();
+    notifyListeners();
   }
 
   // 1. Initialize Grid
@@ -111,24 +318,6 @@ class GameState extends ChangeNotifier {
   }
 
   // 5. Execute Move & Block
-  void _performMove(Cell from, Cell to) {
-    // Move Piece
-    to.occupy(_currentPlayer);
-
-    // Block the OLD square (Core Mechanic)
-    from.block();
-
-    // Clear Selection
-    _selectedAndActiveCell = null;
-
-    // Switch Turn
-    _currentPlayer = _currentPlayer.opponent;
-
-    // Check for Win Condition
-    _checkWinCondition();
-
-    notifyListeners();
-  }
 
   // 6. Win Check (Does current player have ANY moves?)
   void _checkWinCondition() {
