@@ -31,15 +31,15 @@ class GameState extends ChangeNotifier {
     });
   }
 
-  // 2. Setup Starting Positions (Corners)
+  // 2. Setup Starting Positions
   void _initializePieces() {
-    // Player 1: Top Corners (0,0) and (0,4)
-    grid[0][0].occupy(Player.player1);
-    grid[0][4].occupy(Player.player1);
+    // Player 1 (You): Bottom Corners (4,0) and (4,4)
+    grid[4][0].occupy(Player.player1);
+    grid[4][4].occupy(Player.player1);
 
-    // Player 2: Bottom Corners (4,0) and (4,4)
-    grid[4][0].occupy(Player.player2);
-    grid[4][4].occupy(Player.player2);
+    // Player 2 (Opponent): Top Corners (0,0) and (0,4)
+    grid[0][0].occupy(Player.player2);
+    grid[0][4].occupy(Player.player2);
   }
 
   // 3. Selection Logic

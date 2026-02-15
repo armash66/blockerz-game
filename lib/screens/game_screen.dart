@@ -102,10 +102,10 @@ class _GameScreenState extends State<GameScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Opponent Info
+                  // Opponent Info (Player 2 - Top)
                   _buildPlayerInfo(Player.player2, isTop: true),
 
-                  const SizedBox(height: 20),
+                  const Spacer(),
 
                   // 5x5 Grid (Board)
                   Container(
@@ -135,9 +135,9 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const Spacer(),
 
-                  // Player Info (You)
+                  // Player Info (Player 1 - Bottom - You)
                   _buildPlayerInfo(Player.player1, isTop: false),
                 ],
               ),
@@ -208,16 +208,25 @@ class _GameScreenState extends State<GameScreen> {
 
     // 2. Highlights & Content
     if (cell.isBlocked) {
+      // User Request: "blockers red mark not grey"
       cellColor = theme.blockedColor;
+      // We keep background dark but make ICON red
       content =
-          const Icon(Icons.close_rounded, color: Colors.white12, size: 32);
+          const Icon(Icons.close_rounded, color: Colors.redAccent, size: 32);
     } else if (cell.isOccupied) {
-      // 3. Premium Piece Styling
+      // User Request: "multiple token shapes"
+      final isPlayer1 = cell.owner == Player.player1;
+
       content = Container(
         margin: const EdgeInsets.all(6),
         decoration: BoxDecoration(
           color: _getPlayerColor(cell.owner!),
-          shape: BoxShape.circle,
+          shape: isPlayer1
+              ? BoxShape.circle
+              : BoxShape.rectangle, // P1 Circle, P2 Square
+          borderRadius: isPlayer1
+              ? null
+              : BorderRadius.circular(8), // Rounded rect for P2
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.4),
@@ -236,7 +245,9 @@ class _GameScreenState extends State<GameScreen> {
         ),
         child: Center(
           child: Icon(
-            Icons.circle, // Inner detail
+            isPlayer1
+                ? Icons.circle
+                : Icons.stop_rounded, // Inner detail matches shape
             size: 12,
             color: Colors.white.withOpacity(0.3),
           ),

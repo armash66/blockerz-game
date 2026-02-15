@@ -142,7 +142,10 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
                           width: 20,
                           height: 20,
                           decoration: BoxDecoration(
-                            color: theme.gridLight,
+                            // FIX: Check if theme is Neon (Dark Grid), if so make dot WHITE
+                            color: theme.gridLight == const Color(0xFF1A1A1A)
+                                ? Colors.white
+                                : theme.gridLight,
                             shape: BoxShape.circle,
                           ),
                         ),
