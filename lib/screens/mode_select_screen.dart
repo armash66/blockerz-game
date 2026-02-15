@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/primary_button.dart';
+import 'game_screen.dart';
 
 class ModeSelectScreen extends StatefulWidget {
   const ModeSelectScreen({super.key});
@@ -97,11 +98,13 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
             PrimaryButton(
               label: 'START MATCH',
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                        'Starting Mode: ${_selectedMode == 0 ? "PvP" : "PvAI"}'),
-                    backgroundColor: AppTheme.accent,
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GameScreen(
+                      isPvAI: _selectedMode == 1,
+                      enablePowerups: _powerupsEnabled,
+                    ),
                   ),
                 );
               },
