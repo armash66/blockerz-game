@@ -110,10 +110,11 @@ class _GameScreenState extends State<GameScreen> {
                   // 5x5 Grid (Board)
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF302E2B), // Border color
+                      color: AppTheme.currentBoardTheme.borderColor,
                       borderRadius: BorderRadius.circular(8),
-                      border:
-                          Border.all(color: const Color(0xFF302E2B), width: 4),
+                      border: Border.all(
+                          color: AppTheme.currentBoardTheme.borderColor,
+                          width: 4),
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(4),
@@ -197,10 +198,9 @@ class _GameScreenState extends State<GameScreen> {
     final isSelected = _gameState.selectedCell == cell;
 
     // 1. Checkerboard Background
+    final theme = AppTheme.currentBoardTheme;
     final isDark = (row + col) % 2 == 1;
-    final baseColor = isDark
-        ? const Color(0xFF769656) // Chess.com Green Dark
-        : const Color(0xFFEEEED2); // Chess.com Cream Light
+    final baseColor = isDark ? theme.gridDark : theme.gridLight;
 
     // Override for Blocked or Highlight
     Color cellColor = baseColor;
@@ -208,7 +208,7 @@ class _GameScreenState extends State<GameScreen> {
 
     // 2. Highlights & Content
     if (cell.isBlocked) {
-      cellColor = const Color(0xFF262522); // Dark Charcoal for blocked
+      cellColor = theme.blockedColor;
       content =
           const Icon(Icons.close_rounded, color: Colors.white12, size: 32);
     } else if (cell.isOccupied) {
@@ -243,11 +243,7 @@ class _GameScreenState extends State<GameScreen> {
         ),
       );
     } else if (isSelected) {
-      // Highlight Selected Empty (Target?) - Logic handles 'active' selection elsewhere
       cellColor = AppTheme.accent.withOpacity(0.5);
-    } else if (_gameState.selectedCell != null) {
-      // Optional: Show valid move hints (dots)
-      // For now, simpler highlight if needed
     }
 
     return GestureDetector(
@@ -255,7 +251,6 @@ class _GameScreenState extends State<GameScreen> {
       child: Container(
         decoration: BoxDecoration(
           color: cellColor,
-          // No border for seamless board look
         ),
         child: content,
       ),
@@ -263,8 +258,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Color _getPlayerColor(Player p) {
-    return p == Player.player1
-        ? const Color(0xFF4C81B6)
-        : const Color(0xFFB64C81); // Blue vs Pink/Red
+    final theme = AppTheme.currentBoardTheme;
+    return p == Player.player1 ? theme.player1Color : theme.player2Color;
   }
 }

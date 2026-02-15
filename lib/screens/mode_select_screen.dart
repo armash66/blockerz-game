@@ -93,6 +93,66 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
               ),
             ),
 
+            const SizedBox(height: 30),
+
+            // Theme Selection
+            Text(
+              'BOARD STYLE',
+              style: AppTheme.body.copyWith(letterSpacing: 2.0),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 60,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                itemCount: BoardTheme.all.length,
+                separatorBuilder: (c, i) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  final theme = BoardTheme.all[index];
+                  final isSelected = AppTheme.currentBoardTheme == theme;
+
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        AppTheme.currentBoardTheme = theme;
+                      });
+                    },
+                    child: Container(
+                      width: 60,
+                      decoration: BoxDecoration(
+                        color: theme.gridDark,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected ? AppTheme.accent : Colors.white24,
+                          width: isSelected ? 3 : 1,
+                        ),
+                        boxShadow: [
+                          if (isSelected)
+                            BoxShadow(
+                              color: AppTheme.accent.withOpacity(0.5),
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                            ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: theme.gridLight,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
             const Spacer(),
 
             PrimaryButton(
