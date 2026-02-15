@@ -9,11 +9,13 @@ import '../core/ai_player.dart'; // Import added at top
 class GameScreen extends StatefulWidget {
   final bool isPvAI;
   final bool enablePowerups;
+  final AIDifficulty difficulty; // Added
 
   const GameScreen({
     super.key,
     required this.isPvAI,
     required this.enablePowerups,
+    this.difficulty = AIDifficulty.easy, // Default
   });
 
   @override
@@ -28,7 +30,7 @@ class _GameScreenState extends State<GameScreen> {
   void initState() {
     super.initState();
     _gameState = GameState();
-    _aiPlayer = AIPlayer(); // Initialize Logic
+    _aiPlayer = AIPlayer(difficulty: widget.difficulty); // Pass difficulty
     _gameState.addListener(_onGameStateChanged);
   }
 

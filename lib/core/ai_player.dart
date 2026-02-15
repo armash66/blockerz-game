@@ -2,8 +2,13 @@ import 'dart:math';
 import 'board.dart';
 import 'game_state.dart';
 
+enum AIDifficulty { easy, hard }
+
 class AIPlayer {
   final Random _random = Random();
+  final AIDifficulty difficulty;
+
+  AIPlayer({this.difficulty = AIDifficulty.easy});
 
   Future<void> makeMove(GameState state) async {
     // 1. Simulate "Thinking" Delay
@@ -12,53 +17,106 @@ class AIPlayer {
     if (state.isGameOver) return;
 
     // 2. Find all legal moves for Player 2
-    List<_Move> validMoves = [];
+    List<_Move> validMoves = _findValidMoves(state);
 
-    // Iterate through grid to find Player 2's pieces
+    if (validMoves.isEmpty) return;
+
+    // 3. Pick Move based on Difficulty
+    _Move selectedMove;
+
+    if (difficulty == AIDifficulty.easy) {
+      // EASY: Pure Random
+      selectedMove = validMoves[_random.nextInt(validMoves.length)];
+    } else {
+      // HARD: Ranked moves
+      // (For now, simple heuristic: prioritize moves that block opponent or win)
+      selectedMove = _pickBestMove(state, validMoves);
+    }
+
+    // 4. Execut Move
+    state.selectCell(selectedMove.from.row, selectedMove.from.col);
+    await Future.delayed(const Duration(milliseconds: 300));
+    state.selectCell(selectedMove.to.row, selectedMove.to.col);
+  }
+
+  List<_Move> _findValidMoves(GameState state) {
+    List<_Move> moves = [];
     for (int r = 0; r < 5; r++) {
       for (int c = 0; c < 5; c++) {
         final cell = state.grid[r][c];
         if (cell.owner == Player.player2) {
-          // Check neighbors
           final neighbors = [
             [-1, 0],
             [1, 0],
             [0, -1],
             [0, 1]
           ];
-
           for (final offset in neighbors) {
             final nr = r + offset[0];
             final nc = c + offset[1];
-
             if (nr >= 0 && nr < 5 && nc >= 0 && nc < 5) {
               final target = state.grid[nr][nc];
               if (target.isEmpty) {
-                validMoves.add(_Move(from: cell, to: target));
+                moves.add(_Move(from: cell, to: target));
               }
             }
           }
         }
       }
     }
+    return moves;
+  }
 
-    // 3. Pick a Random Move
-    if (validMoves.isNotEmpty) {
-      final move = validMoves[_random.nextInt(validMoves.length)];
+  _Move _pickBestMove(GameState state, List<_Move> moves) {
+    // Basic Heuristic:
+    // Score moves.
+    // +100 if leads to a win (opponent has no moves).
+    // +10 if it blocks an adjacent opponent piece.
+    // +1 Random factor.
 
-      // Execute Move directly
-      // Note: We need a way to execute move on GameState without selection UI logic if possible,
-      // or we just simulate the selection.
+    _Move bestMove = moves.first;
+    int bestScore = -9999;
 
-      // select piece
-      state.selectCell(move.from.row, move.from.col);
+    for (final move in moves) {
+      int score = _random.nextInt(5); // Random base to vary play slightly
 
-      // fast delay
-      await Future.delayed(const Duration(milliseconds: 300));
+      // Simulate Move (conceptually)
+      // Check if moving here blocks a neighbor of opponent?
 
-      // start move
-      state.selectCell(move.to.row, move.to.col);
+      // Heuristic: Prefer center or blocking.
+
+      // 1. Center Control
+      if (move.to.row == 2 && move.to.col == 2) score += 5;
+
+      // 2. Proximity to Opponent (Aggression)
+      if (_hasNeighbor(state, move.to, Player.player1)) {
+        score += 3; // Block/Engage logic
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMove = move;
+      }
     }
+
+    return bestMove;
+  }
+
+  bool _hasNeighbor(GameState state, Cell cell, Player targetOwner) {
+    final neighbors = [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1]
+    ];
+    for (final offset in neighbors) {
+      final nr = cell.row + offset[0];
+      final nc = cell.col + offset[1];
+      if (nr >= 0 && nr < 5 && nc >= 0 && nc < 5) {
+        if (state.grid[nr][nc].owner == targetOwner) return true;
+      }
+    }
+    return false;
   }
 }
 

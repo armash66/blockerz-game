@@ -3,6 +3,7 @@ import '../core/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/primary_button.dart';
 import 'game_screen.dart';
+import '../core/ai_player.dart'; // Import Difficulty Enum
 
 class ModeSelectScreen extends StatefulWidget {
   const ModeSelectScreen({super.key});
@@ -14,6 +15,7 @@ class ModeSelectScreen extends StatefulWidget {
 class _ModeSelectScreenState extends State<ModeSelectScreen> {
   int _selectedMode = 0; // 0: PvP, 1: PvAI
   bool _powerupsEnabled = false;
+  AIDifficulty _selectedDifficulty = AIDifficulty.easy; // Difficulty State
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +55,20 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
               subtitle: 'Challenge the AI engine.',
               icon: Icons.computer_rounded,
             ),
+
+            // Difficulty Selector (Only visible if PvAI is selected)
+            if (_selectedMode == 1) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                      child: _buildDifficultyBtn("EASY", AIDifficulty.easy)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                      child: _buildDifficultyBtn("HARD", AIDifficulty.hard)),
+                ],
+              ),
+            ],
 
             const SizedBox(height: 40),
 
@@ -167,6 +183,7 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
                     builder: (context) => GameScreen(
                       isPvAI: _selectedMode == 1,
                       enablePowerups: _powerupsEnabled,
+                      difficulty: _selectedDifficulty,
                     ),
                   ),
                 );
@@ -238,6 +255,32 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
             if (isSelected)
               Icon(Icons.check_circle_rounded, color: AppTheme.accent),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDifficultyBtn(String label, AIDifficulty diff) {
+    final isSelected = _selectedDifficulty == diff;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedDifficulty = diff),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.accent : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(8),
+          border:
+              Border.all(color: isSelected ? AppTheme.accent : Colors.white10),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: AppTheme.body.copyWith(
+                color: isSelected ? Colors.white : AppTheme.textSecondary,
+                fontWeight: FontWeight.bold,
+                fontSize: 12),
+          ),
         ),
       ),
     );
