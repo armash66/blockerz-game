@@ -68,7 +68,6 @@ class GameState extends ChangeNotifier {
 
   // Powerup: Add to Inventory & Complete Selection
   void selectPowerup(Powerup powerup) {
-    print("Selecting Powerup: ${powerup.name} for $_currentPlayer");
     _inventory[_currentPlayer]?.add(powerup);
     _powerupSelectedThisTurn = true;
     notifyListeners();
@@ -95,7 +94,7 @@ class GameState extends ChangeNotifier {
     final type = _activePowerup!.type;
 
     switch (type) {
-      case PowerupType.doubleMove:
+      case PowerupType.extraMove:
         // Handled in _performMove
         success = false;
         break;
@@ -108,13 +107,12 @@ class GameState extends ChangeNotifier {
     }
 
     if (success) {
-      // Consume Powerup and End Turn (unless Double Move special case)
+      // Consume Powerup BUT DO NOT END TURN (Free Action)
       _inventory[_currentPlayer]?.remove(_activePowerup);
       _activePowerup = null;
-      // Wall Builder & Path Clearer end turn immediately after effect
-      if (type == PowerupType.wallBuilder || type == PowerupType.pathClearer) {
-        _endTurn();
-      }
+      // Note: We deliberately removed _endTurn() here.
+      // User must still make a regular move.
+      notifyListeners(); // UI Update!
     }
     return success;
   }
@@ -146,8 +144,8 @@ class GameState extends ChangeNotifier {
     // Block the OLD square (Core Mechanic)
     from.block();
 
-    // Check Double Move
-    if (_activePowerup?.type == PowerupType.doubleMove) {
+    // Check Extra Move
+    if (_activePowerup?.type == PowerupType.extraMove) {
       // Don't end turn yet!
       _inventory[_currentPlayer]?.remove(_activePowerup);
       _activePowerup = null;
@@ -177,7 +175,7 @@ class GameState extends ChangeNotifier {
         // We can't import valid dart:math Random here easily without making field.
         // Let's just give Double Move for now or cycle?
         // Better: use list.
-        final list = Powerup.all;
+        const list = Powerup.all;
         final item = list[DateTime.now().millisecond % list.length];
         _inventory[_currentPlayer]?.add(item);
       }

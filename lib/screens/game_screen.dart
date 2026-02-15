@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
 import '../core/game_state.dart';
+import '../core/powerup.dart';
 import '../core/board.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/primary_button.dart';
@@ -422,10 +423,24 @@ class _GameScreenState extends State<GameScreen> {
     // 2. Highlights & Content
     if (cell.isBlocked) {
       // User Request: "blockers red mark not grey"
-      cellColor = theme.blockedColor;
-      // We keep background dark but make ICON red
-      content =
-          const Icon(Icons.close_rounded, color: Colors.redAccent, size: 32);
+      // Premium Blocker Design
+      cellColor = Colors.transparent; // Let container handle color
+      content = Container(
+        margin: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+            color: const Color(0xFF2C3E50), // Dark Slate
+            borderRadius: BorderRadius.circular(8),
+            border:
+                Border.all(color: Colors.redAccent.withOpacity(0.6), width: 2),
+            boxShadow: const [
+              BoxShadow(
+                  color: Colors.black54, blurRadius: 4, offset: Offset(2, 2))
+            ]),
+        child: const Center(
+          child: Icon(Icons.lock_outline_rounded,
+              color: Colors.redAccent, size: 24),
+        ),
+      );
     } else if (cell.isOccupied) {
       // User Request: "multiple token shapes"
       final isPlayer1 = cell.owner == Player.player1;
@@ -474,6 +489,13 @@ class _GameScreenState extends State<GameScreen> {
       onTap: () {
         // Prevent tapping if it's AI turn (and we are in PvAI mode)
         if (widget.isPvAI && _gameState.currentPlayer == Player.player2) return;
+
+        // PRIORITIZE POWERUP APPLICATION (Except Double Move)
+        if (_gameState.activePowerup != null &&
+            _gameState.activePowerup!.type != PowerupType.extraMove) {
+          _gameState.applyPowerup(cell);
+          return;
+        }
 
         _gameState.selectCell(row, col);
       },

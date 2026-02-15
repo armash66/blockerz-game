@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 enum PowerupType {
-  doubleMove, // Move twice in one turn
+  extraMove, // Move an additional time this turn
   wallBuilder, // Block any empty tile (Remote Block)
   pathClearer, // Unblock any blocked tile (Remote Unblock)
 }
@@ -23,9 +23,9 @@ class Powerup {
 
   static const List<Powerup> all = [
     Powerup(
-      type: PowerupType.doubleMove,
-      name: "Double Move",
-      description: "Move twice in a single turn.",
+      type: PowerupType.extraMove,
+      name: "Extra Move",
+      description: "Move freely! Does not end turn.",
       icon: Icons.fast_forward_rounded,
       color: Colors.purpleAccent,
     ),
