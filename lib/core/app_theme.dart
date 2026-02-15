@@ -100,6 +100,10 @@ class AppTheme {
   static Color get textSecondary =>
       isDark ? textSecondaryDark : textSecondaryLight;
 
+  static Color get borderColor => isDark ? Colors.white10 : Colors.black12;
+  static Color get glassBorder =>
+      isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05);
+
   static TextStyle get display => GoogleFonts.outfit(
         fontSize: 48,
         fontWeight: FontWeight.bold,

@@ -48,7 +48,7 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
                     decoration: BoxDecoration(
                       color: AppTheme.surface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white10),
+                      border: Border.all(color: AppTheme.borderColor),
                     ),
                     child: Row(
                       children: [
@@ -86,7 +86,7 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
                           decoration: BoxDecoration(
                             color: AppTheme.surface,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white10),
+                            border: Border.all(color: AppTheme.borderColor),
                           ),
                           child: Row(
                             children: [
