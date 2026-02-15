@@ -62,18 +62,43 @@ class BoardTheme {
   );
 
   static const List<BoardTheme> all = [classic, neon, ice, lava];
+
+  static BoardTheme next(BoardTheme current) {
+    final index = all.indexOf(current);
+    final nextIndex = (index + 1) % all.length;
+    return all[nextIndex];
+  }
 }
 
 class AppTheme {
-  // Global App Colors
-  static const Color background = Color(0xFF302E2B);
-  static const Color surface = Color(0xFF262522);
-  static const Color accent = Color(0xFF81B64C);
-  static const Color textPrimary = Color(0xFFEEEEEE);
-  static const Color textSecondary = Color(0xFF989795);
+  // Global App Colors (Dark Mode - Default)
+  static const Color backgroundDark = Color(0xFF302E2B);
+  static const Color surfaceDark = Color(0xFF262522);
+  static const Color textPrimaryDark = Color(0xFFEEEEEE);
+  static const Color textSecondaryDark = Color(0xFF989795);
 
-  // Current Theme State (Simple static for now, ideally Provider)
+  // Global App Colors (Light Mode)
+  static const Color backgroundLight = Color(0xFFF1F0E9); // White/Beige
+  static const Color surfaceLight = Color(0xFFFFFFFF);
+  static const Color textPrimaryLight = Color(0xFF302E2B);
+  static const Color textSecondaryLight = Color(0xFF706E6B);
+
+  static const Color accent = Color(0xFF81B64C); // Green
+
+  // Current Theme State
+  static bool isDark = true;
   static BoardTheme currentBoardTheme = BoardTheme.classic;
+
+  static void toggleTheme() {
+    isDark = !isDark;
+  }
+
+  // Dynamic getters based on isDark
+  static Color get background => isDark ? backgroundDark : backgroundLight;
+  static Color get surface => isDark ? surfaceDark : surfaceLight;
+  static Color get textPrimary => isDark ? textPrimaryDark : textPrimaryLight;
+  static Color get textSecondary =>
+      isDark ? textSecondaryDark : textSecondaryLight;
 
   static TextStyle get display => GoogleFonts.outfit(
         fontSize: 48,
@@ -92,16 +117,16 @@ class AppTheme {
         color: textSecondary,
       );
 
-  static ThemeData get darkTheme {
+  static ThemeData get themeData {
     return ThemeData(
       useMaterial3: true,
       scaffoldBackgroundColor: background,
-      colorScheme: const ColorScheme.dark(
-        primary: accent,
-        surface: surface,
-        background: background,
-      ),
-      iconTheme: const IconThemeData(color: textPrimary),
+      colorScheme: isDark
+          ? ColorScheme.dark(
+              primary: accent, surface: surface, background: background)
+          : ColorScheme.light(
+              primary: accent, surface: surface, background: background),
+      iconTheme: IconThemeData(color: textPrimary),
       typography: Typography.material2021(),
     );
   }

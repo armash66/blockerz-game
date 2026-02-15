@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/theme_toggle_btn.dart';
 import 'game_screen.dart';
 import '../core/ai_player.dart'; // Import Difficulty Enum
 
@@ -26,6 +27,10 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
+      ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 24, right: 24),
+        child: ThemeToggleBtn(onToggle: () => setState(() {})),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -223,7 +228,9 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppTheme.accent
-                    : Colors.white.withOpacity(0.05),
+                    : (AppTheme.isDark
+                        ? Colors.white.withOpacity(0.05)
+                        : Colors.black.withOpacity(0.05)),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -268,10 +275,16 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.accent : Colors.white.withOpacity(0.05),
+          color: isSelected
+              ? AppTheme.accent
+              : (AppTheme.isDark
+                  ? Colors.white.withOpacity(0.05)
+                  : Colors.black.withOpacity(0.05)),
           borderRadius: BorderRadius.circular(8),
-          border:
-              Border.all(color: isSelected ? AppTheme.accent : Colors.white10),
+          border: Border.all(
+              color: isSelected
+                  ? AppTheme.accent
+                  : (AppTheme.isDark ? Colors.white10 : Colors.black12)),
         ),
         child: Center(
           child: Text(

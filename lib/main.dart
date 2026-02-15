@@ -14,7 +14,7 @@ class BlockerzApp extends StatelessWidget {
     return MaterialApp(
       title: 'Blockerz',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.themeData,
       home: const HomeScreen(),
     );
   }

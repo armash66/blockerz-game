@@ -4,6 +4,7 @@ import '../core/game_state.dart';
 import '../core/board.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/theme_toggle_btn.dart';
 import '../core/ai_player.dart'; // Import added at top
 
 class GameScreen extends StatefulWidget {
@@ -152,6 +153,7 @@ class _GameScreenState extends State<GameScreen> {
           ),
         ),
       ),
+      floatingActionButton: ThemeToggleBtn(onToggle: () => setState(() {})),
     );
   }
 
