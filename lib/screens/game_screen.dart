@@ -55,7 +55,9 @@ class _GameScreenState extends State<GameScreen> {
       barrierDismissible: false,
       builder: (context) {
         final winner = _gameState.winner!;
-        final winnerName = winner == Player.player1 ? "PLAYER 1" : "PLAYER 2";
+        final winnerName = winner == Player.player1
+            ? "PLAYER 1"
+            : (widget.isPvAI ? "AI" : "PLAYER 2");
 
         return AlertDialog(
           backgroundColor: AppTheme.surface,
@@ -155,7 +157,11 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _buildPlayerInfo(Player player, {required bool isTop}) {
     final isTurn = _gameState.currentPlayer == player;
-    final name = player == Player.player1 ? "PLAYER 1 (You)" : "PLAYER 2";
+    final name = player == Player.player1
+        ? "PLAYER 1 (You)"
+        : (widget.isPvAI
+            ? "AI (${widget.difficulty == AIDifficulty.easy ? 'Easy' : 'Hard'})"
+            : "PLAYER 2");
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 300),
