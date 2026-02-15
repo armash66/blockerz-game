@@ -77,3 +77,8 @@ macos/Flutter/ephemeral/
 
 # Exceptions to above rules.
 !/android/app/src/main/AndroidManifest.xml
+
+# Android specific
+android/.gradle/
+android/local.properties
+android/app/build/
