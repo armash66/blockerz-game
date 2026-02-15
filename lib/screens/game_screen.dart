@@ -68,7 +68,7 @@ class _GameScreenState extends State<GameScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.emoji_events_rounded,
+              const Icon(Icons.emoji_events_rounded,
                   size: 60, color: AppTheme.accent),
               const SizedBox(height: 20),
               Text('$winnerName WINS!',

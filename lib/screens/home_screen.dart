@@ -129,7 +129,8 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("GOT IT", style: TextStyle(color: AppTheme.accent)),
+            child:
+                const Text("GOT IT", style: TextStyle(color: AppTheme.accent)),
           )
         ],
       ),

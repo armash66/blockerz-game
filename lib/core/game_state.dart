@@ -54,27 +54,24 @@ class GameState extends ChangeNotifier {
       if (piecesPerPlayer == 2) {
         col = i == 0 ? 0 : boardSize - 1;
       } else if (piecesPerPlayer == 3) {
-        if (i == 0)
+        if (i == 0) {
           col = 0;
-        else if (i == 1)
+        } else if (i == 1) {
           col = boardSize ~/ 2;
-        else
+        } else {
           col = boardSize - 1;
+        }
       } else {
         // 4 pieces (9x9)
-        // 0, 3, 5, 8?
-        // Even spacing: 0, size/3, 2*size/3, size-1?
-        // Let's just do Corners + Inner Corners?
-        // 0, 1, size-2, size-1?
-        // Or 0, 2, 6, 8?
-        if (i == 0)
+        if (i == 0) {
           col = 0;
-        else if (i == 1)
+        } else if (i == 1) {
           col = 2;
-        else if (i == 2)
+        } else if (i == 2) {
           col = boardSize - 3;
-        else
+        } else {
           col = boardSize - 1;
+        }
       }
 
       grid[0][col].occupy(Player.player2);
