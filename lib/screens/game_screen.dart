@@ -208,6 +208,7 @@ class _GameScreenState extends State<GameScreen> {
 
                 // Opponent Info (Player 2 - Top)
                 _buildPlayerInfo(Player.player2, isTop: true),
+                if (widget.enablePowerups) _buildInventoryBar(Player.player2),
 
                 // Game Board
                 Expanded(
@@ -222,8 +223,10 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                 ),
 
-                // Powerup Inventory Bar
-                if (widget.enablePowerups) _buildInventoryBar(),
+                // Player 1 Info (We should probably add this for symmetry?)
+                // For now, just the bar.
+                _buildPlayerInfo(Player.player1, isTop: false),
+                if (widget.enablePowerups) _buildInventoryBar(Player.player1),
 
                 const SizedBox(height: 20),
               ],
@@ -256,96 +259,93 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _buildInventoryBar() {
-    final inventory = _gameState.currentPlayerInventory;
+  Widget _buildInventoryBar(Player player) {
+    // Only show if powerups enabled (checked by caller mostly, but safe here)
+    if (!widget.enablePowerups) return const SizedBox.shrink();
+
+    final inventory = _gameState.getPlayerInventory(player);
+    final isCurrentPlayerOne = player == Player.player1;
+    // Alignments: Top (P2) -> Start/End?, Bottom (P1) -> Start?
+    // Let's just keep standard list.
 
     return Container(
-      height: 80,
+      height: 60, // Squeezed a bit to fit both
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: isCurrentPlayerOne
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start, // P1 Right, P2 Left? Or both centered?
         children: [
-          Text(
-            "POWERUPS",
-            style: AppTheme.body.copyWith(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(height: 8),
+          // Label
+          if (!isCurrentPlayerOne) ...[
+            Text("OPPONENT",
+                style: AppTheme.body
+                    .copyWith(fontSize: 8, fontWeight: FontWeight.bold)),
+            const SizedBox(width: 8),
+          ],
+
           Expanded(
             child: inventory.isEmpty
-                ? Center(
+                ? Align(
+                    alignment: isCurrentPlayerOne
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
                     child: Text(
-                      "No powerups collected",
+                      "Empty",
                       style: AppTheme.body.copyWith(
-                          fontSize: 12, color: AppTheme.textSecondary),
+                          fontSize: 10, color: AppTheme.textSecondary),
                     ),
                   )
                 : ListView.separated(
                     scrollDirection: Axis.horizontal,
+                    reverse: isCurrentPlayerOne, // P1 fills from right
                     itemCount: inventory.length,
                     separatorBuilder: (context, index) =>
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8),
                     itemBuilder: (context, index) {
                       final powerup = inventory[index];
                       final isActive = _gameState.activePowerup == powerup;
+                      final isOwnerTurn = _gameState.currentPlayer == player;
 
                       return Tooltip(
                         message: powerup.description,
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.black87,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        textStyle: AppTheme.body
-                            .copyWith(color: Colors.white, fontSize: 10),
                         child: GestureDetector(
                           onTap: () {
-                            // Only current player can activate
-                            // (AI logic would need to call activatePowerup too)
-                            if (_gameState.currentPlayer == Player.player2 &&
-                                widget.isPvAI) return;
+                            // Interaction Logic
+                            if (!isOwnerTurn) return; // Not their turn
+                            if (player == Player.player2 && widget.isPvAI)
+                              return; // Can't touch AI items
+
+                            // Prevent tapping opponent's items
+                            if (player != _gameState.currentPlayer) return;
+
                             _gameState.activatePowerup(powerup);
                           },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppTheme.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color:
-                                    isActive ? powerup.color : Colors.white10,
-                                width: isActive ? 2 : 1,
-                              ),
-                              boxShadow: isActive
-                                  ? [
-                                      BoxShadow(
-                                        color: powerup.color.withOpacity(0.4),
-                                        blurRadius: 8,
-                                      )
-                                    ]
-                                  : [],
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(powerup.icon,
-                                    color: powerup.color, size: 24),
-                                const SizedBox(width: 8),
-                                Text(
-                                  powerup.name,
-                                  style: AppTheme.body.copyWith(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: isActive
-                                        ? powerup.color
-                                        : AppTheme.textPrimary,
-                                  ),
+                          child: Opacity(
+                            opacity: isOwnerTurn ? 1.0 : 0.5,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: AppTheme.surface,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color:
+                                      isActive ? powerup.color : Colors.white10,
+                                  width: isActive ? 2 : 1,
                                 ),
-                              ],
+                                boxShadow: isActive
+                                    ? [
+                                        BoxShadow(
+                                          color: powerup.color.withOpacity(0.4),
+                                          blurRadius: 8,
+                                        )
+                                      ]
+                                    : [],
+                              ),
+                              child: Icon(powerup.icon,
+                                  color: powerup.color, size: 20),
                             ),
                           ),
                         ),
@@ -353,6 +353,13 @@ class _GameScreenState extends State<GameScreen> {
                     },
                   ),
           ),
+
+          if (isCurrentPlayerOne) ...[
+            const SizedBox(width: 8),
+            Text("YOU",
+                style: AppTheme.body
+                    .copyWith(fontSize: 8, fontWeight: FontWeight.bold)),
+          ],
         ],
       ),
     );

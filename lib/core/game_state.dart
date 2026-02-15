@@ -22,7 +22,8 @@ class GameState extends ChangeNotifier {
 
   // Powerup State
   final Map<Player, int> _turnsPlayed = {
-    Player.player1: 0,
+    Player.player1:
+        1, // Start at 1 so P1 gets powerup at start of Turn 3 (matched with P2)
     Player.player2: 0,
   };
 
@@ -59,6 +60,7 @@ class GameState extends ChangeNotifier {
   }
 
   List<Powerup> get currentPlayerInventory => _inventory[_currentPlayer] ?? [];
+  List<Powerup> getPlayerInventory(Player p) => _inventory[p] ?? [];
   Powerup? get activePowerup => _activePowerup;
 
   GameState({this.boardSize = 5, this.aiDifficulty})
