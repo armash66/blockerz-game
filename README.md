@@ -77,4 +77,4 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ---
 
-> Made with ❤️ by **Armash Ansari** & **Antigravity AI**
+© 2026 **Armash Ansari**. All rights reserved.
