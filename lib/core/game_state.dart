@@ -22,8 +22,7 @@ class GameState extends ChangeNotifier {
 
   // Powerup State
   final Map<Player, int> _turnsPlayed = {
-    Player.player1:
-        1, // Start at 1 so P1 gets powerup at start of Turn 3 (matched with P2)
+    Player.player1: 0,
     Player.player2: 0,
   };
 
@@ -41,18 +40,12 @@ class GameState extends ChangeNotifier {
   bool get isPowerupSelectionPhase {
     if (_powerupSelectedThisTurn) return false;
 
-    final turns = _turnsPlayed[_currentPlayer] ?? 0;
-    // Check if it's the 3rd turn (indices 3, 6, 9...)
-    if (turns > 0 && turns % 3 == 0) {
-      // AI Logic:
-      // If AI is playing (Player 2 in PvAI), check difficulty.
+    // A player is eligible for a powerup AFTER they have COMPLETED 3, 6, 9... moves.
+    // So at the START of Turn 4, 7, 10... (when count is 3, 6, 9...)
+    final turnsCompleted = _turnsPlayed[_currentPlayer] ?? 0;
+    if (turnsCompleted > 0 && turnsCompleted % 3 == 0) {
       if (_currentPlayer == Player.player2 && aiDifficulty != null) {
-        // Easy AI: NO Powerups
-        if (aiDifficulty == AIDifficulty.easy) return false;
-        // Hard AI: Gets powerups but we handle selection manually (auto-select)
-        // So we return FALSE here so UI overlay doesn't show.
-        // We'll trigger auto-select in _startTurn logic or similar.
-        return false;
+        return false; // AI handled in _endTurn
       }
       return true;
     }
@@ -162,16 +155,18 @@ class GameState extends ChangeNotifier {
 
   void _endTurn() {
     _activePowerup = null;
+
+    // Increment moves for the player who JUST finished
+    _turnsPlayed[_currentPlayer] = (_turnsPlayed[_currentPlayer] ?? 0) + 1;
+
+    // Switch to Next Player
     _currentPlayer = _currentPlayer.opponent;
     _powerupSelectedThisTurn = false;
 
-    // Increment turn counter for the NEW player starting their turn
-    _turnsPlayed[_currentPlayer] = (_turnsPlayed[_currentPlayer] ?? 0) + 1;
-
-    // Check AI Hard Powerup Grant
+    // Check AI Hard Powerup Grant (Now checking the NEW player who just started)
     if (_currentPlayer == Player.player2 && aiDifficulty == AIDifficulty.hard) {
-      final turns = _turnsPlayed[_currentPlayer] ?? 0;
-      if (turns > 0 && turns % 3 == 0) {
+      final turnsCompletedByAI = _turnsPlayed[_currentPlayer] ?? 0;
+      if (turnsCompletedByAI > 0 && turnsCompletedByAI % 3 == 0) {
         // Grant Random Powerup automatically
         // Simple random selection
         // We can't import valid dart:math Random here easily without making field.
