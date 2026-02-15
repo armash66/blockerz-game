@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'board.dart';
 import 'powerup.dart';
+import 'ai_player.dart';
 
 class GameState extends ChangeNotifier {
   // Grid
@@ -11,12 +12,20 @@ class GameState extends ChangeNotifier {
   Player _currentPlayer = Player.player1;
   Player? _winner;
 
+  // AI Configuration
+  AIDifficulty? aiDifficulty; // Null means PvP or Player's turn
+
   // Game Status
   bool get isGameOver => _winner != null;
   Player get currentPlayer => _currentPlayer;
   Player? get winner => _winner;
+
   // Powerup State
-  int _turnsSinceLastPowerup = 0;
+  final Map<Player, int> _turnsPlayed = {
+    Player.player1: 0,
+    Player.player2: 0,
+  };
+
   final Map<Player, List<Powerup>> _inventory = {
     Player.player1: [],
     Player.player2: [],
@@ -28,30 +37,59 @@ class GameState extends ChangeNotifier {
   Cell? _selectedAndActiveCell;
   Cell? get selectedCell => _selectedAndActiveCell;
 
-  bool get isPowerupSelectionPhase =>
-      _turnsSinceLastPowerup > 0 && _turnsSinceLastPowerup % 3 == 0;
+  bool get isPowerupSelectionPhase {
+    if (_powerupSelectedThisTurn) return false;
+
+    final turns = _turnsPlayed[_currentPlayer] ?? 0;
+    // Check if it's the 3rd turn (indices 3, 6, 9...)
+    if (turns > 0 && turns % 3 == 0) {
+      // AI Logic:
+      // If AI is playing (Player 2 in PvAI), check difficulty.
+      if (_currentPlayer == Player.player2 && aiDifficulty != null) {
+        // Easy AI: NO Powerups
+        if (aiDifficulty == AIDifficulty.easy) return false;
+        // Hard AI: Gets powerups but we handle selection manually (auto-select)
+        // So we return FALSE here so UI overlay doesn't show.
+        // We'll trigger auto-select in _startTurn logic or similar.
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
   List<Powerup> get currentPlayerInventory => _inventory[_currentPlayer] ?? [];
   Powerup? get activePowerup => _activePowerup;
 
-  GameState({this.boardSize = 5}) : grid = _createGrid(boardSize) {
+  GameState({this.boardSize = 5, this.aiDifficulty})
+      : grid = _createGrid(boardSize) {
     _initializePieces();
   }
 
   // Powerup: Add to Inventory
   void addPowerupToInventory(Powerup powerup) {
     _inventory[_currentPlayer]?.add(powerup);
-    // Reset counter or just keep it?
-    // If we want it every 3 turns, we just let it grow.
-    // Or we reset it. Let's reset it to 0 after selection?
-    // No, logic is "Every 3 turns". So turns 3, 6, 9...
-    // We'll handle the phase end in UI calling "completeSelection"
     notifyListeners();
   }
 
   void completePowerupSelection() {
-    _turnsSinceLastPowerup = 0; // Reset counter after selection
+    // We don't reset total turns, just mark phase as done?
+    // Wait, isPowerupSelectionPhase relies on turns % 3 == 0.
+    // If we don't change state, it stays true.
+    // Hack: We can just let it be?
+    // No, UI will keep showing overlay.
+    // Solution: Add a boolean `_hasSelectedPowerupForTurn`?
+    // Or just increment turn AFTER move?
+    // Current logic: Turns increment at END of turn.
+    // So Frame 1 of new turn: turns % 3 == 0 -> Overlay shows.
+    // User selects -> Overlay closes.
+    // We need a way to say "Selection Done".
+    // Let's add `_powerupSelectedThisTurn` flag.
+    _powerupSelectedThisTurn = true;
     notifyListeners();
   }
+
+  bool _powerupSelectedThisTurn = false;
 
   // Powerup: Activation
   void activatePowerup(Powerup powerup) {
@@ -72,92 +110,48 @@ class GameState extends ChangeNotifier {
     final type = _activePowerup!.type;
 
     switch (type) {
-      case PowerupType.highJump:
-        success = _applyHighJump(target);
-        break;
-      case PowerupType.bomb:
-        success = _applyBomb(target);
-        break;
-      case PowerupType.shield:
-        success = _applyShield();
-        break;
       case PowerupType.doubleMove:
         // Handled in _performMove
         success = false;
         break;
+      case PowerupType.wallBuilder:
+        success = _applyWallBuilder(target);
+        break;
+      case PowerupType.pathClearer:
+        success = _applyPathClearer(target);
+        break;
     }
 
     if (success) {
-      // Consume Powerup and End Turn (unless Double Move / Shield special case)
+      // Consume Powerup and End Turn (unless Double Move special case)
       _inventory[_currentPlayer]?.remove(_activePowerup);
       _activePowerup = null;
-      // Note: High Jump moves piece -> End Turn called in move.
-      // Bomb -> End Turn called in apply.
-      // Shield -> Instant effect -> End Turn?
-      if (type == PowerupType.shield) _endTurn();
+      // Wall Builder & Path Clearer end turn immediately after effect
+      if (type == PowerupType.wallBuilder || type == PowerupType.pathClearer) {
+        _endTurn();
+      }
     }
     return success;
   }
 
   // --- New Powerup Implementations ---
 
-  // 1. High Jump: Range 3, Ignores Obstacles
-  bool _applyHighJump(Cell target) {
-    if (_selectedAndActiveCell == null) return false;
-    // Must be empty
+  // 1. Wall Builder: Block ANY empty tile
+  bool _applyWallBuilder(Cell target) {
     if (!target.isEmpty) return false;
 
-    final from = _selectedAndActiveCell!;
-    // Range Check (Manhattan Distance <= 3)
-    final dr = (from.row - target.row).abs();
-    final dc = (from.col - target.col).abs();
-
-    // Logic: Range 3.
-    if ((dr + dc) <= 3) {
-      _performMove(from, target);
-      return true;
-    }
-    return false;
-  }
-
-  // 2. Bomb: Destroy Blocked Cell
-  bool _applyBomb(Cell target) {
-    // Target must be BLOCKED
-    if (!target.isBlocked) return false;
-
-    // Destroy it!
-    target.type = CellType.empty;
-
-    // Bomb ends turn immediately
-    _inventory[_currentPlayer]?.remove(Powerup.get(PowerupType.bomb));
-    _activePowerup = null;
-    _selectedAndActiveCell = null;
-    _endTurn();
+    // Remote Block
+    target.block();
     return true;
   }
 
-  // 3. Shield: Immune to blocking for next turn
-  // We need a way to track "Immunity".
-  // Let's add `_isShielded` state.
-  bool _isShielded = false; // Current player is shielded?
-  // Actually, shield protects the TILE you leave from being blocked.
-  // Or protects YOU from being blocked?
-  // "Immune to being blocked next turn" ->
-  // Interpretation: The tile I move FROM is NOT blocked.
-  // Implementation: Set flag, then in _performMove, skip block().
+  // 2. Path Clearer: Unblock ANY blocked tile
+  bool _applyPathClearer(Cell target) {
+    if (!target.isBlocked) return false;
 
-  bool _applyShield() {
-    _isShielded = true;
-    // Shield doesn't end turn, it applies to the MOVE.
-    // So we just set state and return false (to not consume yet? No, consume now).
-    // Wait, if we consume now, activePowerup becomes null.
-    // Let's keep it active until move?
-    // Easier: Just set a flag "Shield Active" and consume immediately.
-
-    // BUT user has to move AFTER clicking shield.
-    // So: Click Shield -> Active.
-    // Then Move -> Check Active -> Skip Block -> Consume.
-    return false; // Handled in performMove
+    // Unblock
+    target.type = CellType.empty;
+    return true;
   }
 
   void _performMove(Cell from, Cell to) {
@@ -165,24 +159,7 @@ class GameState extends ChangeNotifier {
     to.occupy(_currentPlayer);
 
     // Block the OLD square (Core Mechanic)
-    // UNLESS Shield is active!
-    // Or High Jump? (High Jump still blocks old square usually).
-
-    bool skipBlock = false;
-
-    // Check if player has shield active
-    if (_isShielded) {
-      skipBlock = true;
-      _isShielded = false; // Consume shield
-    } else if (_activePowerup?.type == PowerupType.shield) {
-      // Fallback or double check if active powerup is still there?
-      // Actually applyShield sets _isShielded.
-      // So we rely on _isShielded.
-    }
-
-    if (!skipBlock) {
-      from.block();
-    }
+    from.block();
 
     // Check Double Move
     if (_activePowerup?.type == PowerupType.doubleMove) {
@@ -194,12 +171,6 @@ class GameState extends ChangeNotifier {
       return;
     }
 
-    // High Jump Logic (Consume if used)
-    if (_activePowerup?.type == PowerupType.highJump) {
-      _inventory[_currentPlayer]?.remove(_activePowerup);
-      _activePowerup = null;
-    }
-
     _selectedAndActiveCell = null;
     _endTurn();
   }
@@ -207,13 +178,24 @@ class GameState extends ChangeNotifier {
   void _endTurn() {
     _activePowerup = null;
     _currentPlayer = _currentPlayer.opponent;
+    _powerupSelectedThisTurn = false;
 
-    // Increment turn counter only when Player 1 starts?
-    // Or just count "half turns"?
-    // "Every 3rd move" usually means "Every 3 rounds".
-    // Let's increment on P2 -> P1 switch?
-    if (_currentPlayer == Player.player1) {
-      _turnsSinceLastPowerup++;
+    // Increment turn counter for the NEW player starting their turn
+    _turnsPlayed[_currentPlayer] = (_turnsPlayed[_currentPlayer] ?? 0) + 1;
+
+    // Check AI Hard Powerup Grant
+    if (_currentPlayer == Player.player2 && aiDifficulty == AIDifficulty.hard) {
+      final turns = _turnsPlayed[_currentPlayer] ?? 0;
+      if (turns > 0 && turns % 3 == 0) {
+        // Grant Random Powerup automatically
+        // Simple random selection
+        // We can't import valid dart:math Random here easily without making field.
+        // Let's just give Double Move for now or cycle?
+        // Better: use list.
+        final list = Powerup.all;
+        final item = list[DateTime.now().millisecond % list.length];
+        _inventory[_currentPlayer]?.add(item);
+      }
     }
 
     _checkWinCondition();
