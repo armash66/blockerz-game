@@ -4,6 +4,7 @@ import '../core/game_state.dart';
 import '../core/board.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/primary_button.dart';
+import '../core/ai_player.dart'; // Import added at top
 
 class GameScreen extends StatefulWidget {
   final bool isPvAI;
@@ -21,26 +22,28 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> {
   late GameState _gameState;
+  late AIPlayer _aiPlayer;
 
   @override
   void initState() {
     super.initState();
     _gameState = GameState();
+    _aiPlayer = AIPlayer(); // Initialize Logic
     _gameState.addListener(_onGameStateChanged);
   }
 
-  @override
-  void dispose() {
-    _gameState.removeListener(_onGameStateChanged);
-    _gameState.dispose();
-    super.dispose();
-  }
+  // ...
 
   void _onGameStateChanged() {
     setState(() {});
 
     if (_gameState.isGameOver) {
       _showGameOverDialog();
+    } else {
+      // Check for AI Turn
+      if (widget.isPvAI && _gameState.currentPlayer == Player.player2) {
+        _aiPlayer.makeMove(_gameState);
+      }
     }
   }
 
@@ -258,7 +261,12 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     return GestureDetector(
-      onTap: () => _gameState.selectCell(row, col),
+      onTap: () {
+        // Prevent tapping if it's AI turn (and we are in PvAI mode)
+        if (widget.isPvAI && _gameState.currentPlayer == Player.player2) return;
+
+        _gameState.selectCell(row, col);
+      },
       child: Container(
         decoration: BoxDecoration(
           color: cellColor,
