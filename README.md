@@ -1,80 +1,64 @@
-# 🚫 BLOCKERZ - Strategy Board Game
+# BLOCKERZ
 
-> "Trap your opponent. Own the board."
+Blockerz is a local multiplayer strategy board game built with Flutter.
+The core loop is simple: move one tile, then your previous tile becomes blocked. Trap the opponent so they have no legal moves left.
 
-**Blockerz** is a modern, fast-paced strategy game built with **Flutter**. It combines the classic "Isolation" mechanic with dynamic powerups, variable board sizes, and a sleek, responsive UI.
+## What is in this version
 
----
+- Game modes:
+  - PvP (same device)
+  - PvAI with Easy and Hard difficulty
+- Board sizes: `5x5`, `7x7`, `9x9`
+- Starting piece counts by board size:
+  - `5x5` -> 2 pieces/player
+  - `7x7` -> 3 pieces/player
+  - `9x9` -> 4 pieces/player
+- Powerups (optional) with animated card draw every 3 completed turns:
+  - Extra Move: move again without ending turn
+  - Wall Builder: block any empty tile
+  - Path Clearer: remove a blocked tile
+- Board themes: Classic, Neon, Ice, Lava
+- Light/Dark UI toggle
+- Material 3 UI + Google Fonts (`Outfit`)
 
-## ✨ Features
+## Rules
 
-### 🎮 Game Modes
--   **PvP (Player vs Player)**: Battle a friend on the same device.
--   **PvAI (Player vs AI)**: Challenge the computer!
-    -   **Easy Mode**: Random moves for casual play.
-    -   **Hard Mode**: A greedy algorithm that fights for control.
+1. Select one of your pieces.
+2. Move exactly one tile orthogonally (up, down, left, right) to an empty cell.
+3. The cell you moved from becomes permanently blocked.
+4. If a player has no legal moves at the start of their turn, they lose.
 
-### ⚡ Powerup System
-Spice up the strategy with game-changing abilities! Be careful—you only draw one random card every 3 turns.
--   **🚀 High Jump**: Leap anywhere within range 3, ignoring obstacles.
--   **💣 Bomb**: Destroy a blocked cell to open new paths.
--   **🛡️ Shield**: Protect your previous tile from being blocked for one turn.
--   **⏩ Double Move**: Move twice in a single turn to outmaneuver your opponent.
+## AI behavior
 
-### 🎨 Customization
--   **Board Sizes**: Play on **5x5** (Quick), **7x7** (Tactical), or **9x9** (Marathon) grids.
--   **Dynamic Themes**:
-    -   **Classic**: Clean, dark aesthetic.
-    -   **Neon**: Glowing cyber-future vibes.
-    -   **Ice**: Cool blue tones for a chill game.
--   **Dark/Light Mode**: Toggle anytime to suit your environment.
+- Easy: random legal move.
+- Hard: heuristic move selection (center preference + pressure on nearby opponent pieces).
 
----
+## Project structure
 
-## 📜 How to Play
+- `lib/main.dart` - app entry (`BlockerzApp`)
+- `lib/screens/home_screen.dart` - landing + rules dialog
+- `lib/screens/mode_select_screen.dart` - mode, difficulty, powerups, theme, board size
+- `lib/screens/game_screen.dart` - board rendering and gameplay interactions
+- `lib/core/game_state.dart` - game rules, turn flow, win check, inventories
+- `lib/core/ai_player.dart` - AI move generation
+- `lib/core/powerup.dart` - powerup definitions
+- `lib/core/app_theme.dart` - board/UI themes
+- `lib/widgets/` - reusable UI components
 
-1.  **Move**: Select your piece and move to any adjacent empty tile (horizontal, vertical, or diagonal).
-2.  **Block**: The tile you moved **FROM** is permanently blocked (marked with an X). You cannot move there again!
-3.  **Trap**: The goal is to survive. If a player cannot make a valid move, they **LOSE**. The last player standing wins!
+## Run locally
 
----
+```bash
+flutter pub get
+flutter run
+```
 
-## 🚀 Getting Started
+## Test
 
-To run this project locally:
+```bash
+flutter test
+```
 
-1.  **Prerequisites**: Ensure you have [Flutter](https://flutter.dev/docs/get-started/install) installed.
+## Notes
 
-2.  **Clone the repository**:
-    ```bash
-    git clone https://github.com/armash66/blockerz-game.git
-    cd blockerz
-    ```
-
-3.  **Get Dependencies**:
-    ```bash
-    flutter pub get
-    ```
-
-4.  **Run the App**:
-    ```bash
-    flutter run
-    ```
-
----
-
-## 🛠️ Built With
-
--   **Flutter** - UI Framework
--   **Dart** - Programming Language
--   **Provider** (Implicit State Management via standard Flutter State)
-
----
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
----
-
-© 2026 **Armash Ansari**. All rights reserved.
+- Package name in `pubspec.yaml` is currently `lockgrid`.
+- App branding/title in UI is `BLOCKERZ`.

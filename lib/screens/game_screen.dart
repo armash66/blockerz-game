@@ -314,8 +314,9 @@ class _GameScreenState extends State<GameScreen> {
                           onTap: () {
                             // Interaction Logic
                             if (!isOwnerTurn) return; // Not their turn
-                            if (player == Player.player2 && widget.isPvAI)
+                            if (player == Player.player2 && widget.isPvAI) {
                               return; // Can't touch AI items
+                            }
 
                             // Prevent tapping opponent's items
                             if (player != _gameState.currentPlayer) return;
@@ -520,3 +521,4 @@ class _GameScreenState extends State<GameScreen> {
     return p == Player.player1 ? theme.player1Color : theme.player2Color;
   }
 }
+
