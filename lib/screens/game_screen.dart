@@ -30,9 +30,14 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen> {
+class _GameScreenState extends State<GameScreen>
+    with SingleTickerProviderStateMixin {
   late GameState _gameState;
   late AIPlayer _aiPlayer;
+
+  // Screen Shake
+  late AnimationController _shakeController;
+  late Animation<double> _shakeAnimation;
 
   @override
   void initState() {
@@ -43,6 +48,27 @@ class _GameScreenState extends State<GameScreen> {
     );
     _aiPlayer = AIPlayer(difficulty: widget.difficulty);
     _gameState.addListener(_onGameStateChanged);
+
+    // Setup Shake Animation
+    _shakeController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 300));
+    _shakeAnimation = Tween<double>(begin: 0, end: 10)
+        .chain(CurveTween(curve: Curves.elasticIn))
+        .animate(_shakeController)
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          _shakeController.reset();
+        }
+      });
+
+    // Listen to Game Events
+    _gameState.eventStream.listen((event) {
+      if (event == GameEvent.move ||
+          event == GameEvent.block ||
+          event == GameEvent.powerup) {
+        _shakeController.forward(from: 0);
+      }
+    });
   }
 
   // ...
@@ -110,152 +136,164 @@ class _GameScreenState extends State<GameScreen> {
       backgroundColor: AppTheme.background,
       body: Stack(
         children: [
-          SafeArea(
-            child: Column(
-              children: [
-                // Header (Back, Info, Theme)
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      Column(
-                        children: [
-                          Text(
-                            widget.isPvAI ? "PvAI" : "PvP",
-                            style: AppTheme.heading.copyWith(fontSize: 20),
-                          ),
-                          if (widget.isPvAI)
-                            Text(
-                              widget.difficulty.name.toUpperCase(),
-                              style: AppTheme.body.copyWith(
-                                  fontSize: 12, color: AppTheme.accent),
-                            ),
-
-                          // Turn Indicator
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: _gameState.currentPlayer == Player.player1
-                                  ? AppTheme.currentBoardTheme.player1Color
-                                      .withOpacity(0.2)
-                                  : AppTheme.currentBoardTheme.player2Color
-                                      .withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: _gameState.currentPlayer ==
-                                        Player.player1
-                                    ? AppTheme.currentBoardTheme.player1Color
-                                    : AppTheme.currentBoardTheme.player2Color,
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              _gameState.currentPlayer == Player.player1
-                                  ? "PLAYER 1"
-                                  : "PLAYER 2",
-                              style: AppTheme.body.copyWith(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: _gameState.currentPlayer ==
-                                        Player.player1
-                                    ? AppTheme.currentBoardTheme.player1Color
-                                    : AppTheme.currentBoardTheme.player2Color,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.undo),
-                            color: AppTheme.textPrimary,
-                            onPressed:
-                                _gameState.canUndo ? _gameState.undo : null,
-                            tooltip: "Undo",
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.redo),
-                            color: AppTheme.textPrimary,
-                            onPressed:
-                                _gameState.canRedo ? _gameState.redo : null,
-                            tooltip: "Redo",
-                          ),
-                        ],
-                      ),
-                      ThemeToggleBtn(onToggle: () => setState(() {})),
-                    ],
-                  ),
-                ),
-
-                // Active Powerup Indicator
-                if (_gameState.activePowerup != null)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                        color: _gameState.activePowerup!.color,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                              color: _gameState.activePowerup!.color
-                                  .withOpacity(0.4),
-                              blurRadius: 8),
-                        ]),
+          AnimatedBuilder(
+            animation: _shakeController,
+            builder: (context, child) {
+              final offset = _shakeAnimation.value *
+                  ((DateTime.now().millisecond % 2 == 0) ? 1 : -1);
+              return Transform.translate(
+                offset: Offset(offset, 0),
+                child: child,
+              );
+            },
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // Header (Back, Info, Theme)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(_gameState.activePowerup!.icon,
-                            color: Colors.white, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          "${_gameState.activePowerup!.name} ACTIVE",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                          onPressed: () => Navigator.pop(context),
                         ),
+                        Column(
+                          children: [
+                            Text(
+                              widget.isPvAI ? "PvAI" : "PvP",
+                              style: AppTheme.heading.copyWith(fontSize: 20),
+                            ),
+                            if (widget.isPvAI)
+                              Text(
+                                widget.difficulty.name.toUpperCase(),
+                                style: AppTheme.body.copyWith(
+                                    fontSize: 12, color: AppTheme.accent),
+                              ),
+
+                            // Turn Indicator
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _gameState.currentPlayer ==
+                                        Player.player1
+                                    ? AppTheme.currentBoardTheme.player1Color
+                                        .withOpacity(0.2)
+                                    : AppTheme.currentBoardTheme.player2Color
+                                        .withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _gameState.currentPlayer ==
+                                          Player.player1
+                                      ? AppTheme.currentBoardTheme.player1Color
+                                      : AppTheme.currentBoardTheme.player2Color,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                _gameState.currentPlayer == Player.player1
+                                    ? "PLAYER 1"
+                                    : "PLAYER 2",
+                                style: AppTheme.body.copyWith(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: _gameState.currentPlayer ==
+                                          Player.player1
+                                      ? AppTheme.currentBoardTheme.player1Color
+                                      : AppTheme.currentBoardTheme.player2Color,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.undo),
+                              color: AppTheme.textPrimary,
+                              onPressed:
+                                  _gameState.canUndo ? _gameState.undo : null,
+                              tooltip: "Undo",
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.redo),
+                              color: AppTheme.textPrimary,
+                              onPressed:
+                                  _gameState.canRedo ? _gameState.redo : null,
+                              tooltip: "Redo",
+                            ),
+                          ],
+                        ),
+                        ThemeToggleBtn(onToggle: () => setState(() {})),
                       ],
                     ),
                   ),
 
-                // Opponent Info (Player 2 - Top)
-                _buildPlayerInfo(Player.player2, isTop: true),
-                if (widget.enablePowerups) _buildInventoryBar(Player.player2),
+                  // Active Powerup Indicator
+                  if (_gameState.activePowerup != null)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                          color: _gameState.activePowerup!.color,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                                color: _gameState.activePowerup!.color
+                                    .withOpacity(0.4),
+                                blurRadius: 8),
+                          ]),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(_gameState.activePowerup!.icon,
+                              color: Colors.white, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            "${_gameState.activePowerup!.name} ACTIVE",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
-                // Game Board
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: AspectRatio(
-                        aspectRatio: 1,
-                        child: _buildGrid(),
+                  // Opponent Info (Player 2 - Top)
+                  _buildPlayerInfo(Player.player2, isTop: true),
+                  if (widget.enablePowerups) _buildInventoryBar(Player.player2),
+
+                  // Game Board
+                  Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: _buildGrid(),
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                // Player 1 Info (We should probably add this for symmetry?)
-                // For now, just the bar.
-                _buildPlayerInfo(Player.player1, isTop: false),
-                if (widget.enablePowerups) _buildInventoryBar(Player.player1),
+                  // Player 1 Info (We should probably add this for symmetry?)
+                  // For now, just the bar.
+                  _buildPlayerInfo(Player.player1, isTop: false),
+                  if (widget.enablePowerups) _buildInventoryBar(Player.player1),
 
-                const SizedBox(height: 20),
-              ],
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
-          ),
+          ), // Closes AnimatedBuilder
 
           // Powerup Selection Overlay
           if (widget.enablePowerups && _gameState.isPowerupSelectionPhase)

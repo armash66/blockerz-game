@@ -3,6 +3,9 @@ import 'dart:async'; // For Timer
 import 'board.dart';
 import 'powerup.dart';
 import 'ai_player.dart';
+import 'audio_manager.dart';
+
+enum GameEvent { move, block, powerup, win, lose }
 
 class GameState extends ChangeNotifier {
   // Grid
@@ -29,6 +32,11 @@ class GameState extends ChangeNotifier {
   bool get isGameOver => _winner != null;
   Player get currentPlayer => _currentPlayer;
   Player? get winner => _winner;
+
+  // Events for UI Effects
+  final StreamController<GameEvent> _eventController =
+      StreamController<GameEvent>.broadcast();
+  Stream<GameEvent> get eventStream => _eventController.stream;
 
   // Powerup State
   // Powerup State
@@ -100,14 +108,15 @@ class GameState extends ChangeNotifier {
     });
   }
 
-  void _stopTimer() {
-    _timer?.cancel();
-  }
-
   void _onTimeOut() {
     _timer?.cancel();
     // Current player ran out of time -> Opponent wins
     _winner = _currentPlayer.opponent;
+    if (_winner == Player.player1) {
+      AudioManager().playWin();
+    } else {
+      AudioManager().playLose();
+    }
     notifyListeners();
   }
 
@@ -170,7 +179,9 @@ class GameState extends ChangeNotifier {
     if (success) {
       // Consume Powerup BUT DO NOT END TURN (Free Action)
       _inventory[_currentPlayer]?.remove(_activePowerup);
-      _activePowerup = null;
+      _activePowerup = null; // Clear active powerup
+      AudioManager().playPowerup();
+      _eventController.add(GameEvent.powerup);
       // Note: We deliberately removed _endTurn() here.
       // User must still make a regular move.
       notifyListeners(); // UI Update!
@@ -201,6 +212,8 @@ class GameState extends ChangeNotifier {
   void _performMove(Cell from, Cell to) {
     // Move Piece
     to.occupy(_currentPlayer);
+    AudioManager().playMove();
+    _eventController.add(GameEvent.move);
 
     // Block the OLD square (Core Mechanic)
     // UNLESS "Stealth Move" is active
@@ -212,6 +225,8 @@ class GameState extends ChangeNotifier {
       notifyListeners(); // Update inventory UI
     } else {
       from.block();
+      AudioManager().playBlock();
+      _eventController.add(GameEvent.block);
     }
 
     // Check Extra Move
@@ -431,6 +446,13 @@ class GameState extends ChangeNotifier {
     // If the NEW current player has NO moves, the PREVIOUS player wins
     if (!_hasLegalMoves(_currentPlayer)) {
       _winner = _currentPlayer.opponent;
+      if (_winner == Player.player1) {
+        AudioManager().playWin();
+        _eventController.add(GameEvent.win);
+      } else {
+        AudioManager().playLose();
+        _eventController.add(GameEvent.lose);
+      }
     }
   }
 
