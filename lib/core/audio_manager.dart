@@ -41,16 +41,16 @@ class AudioManager {
   static const String _blockSound = 'audio/block.mp3';
   static const String _winSound = 'audio/win.mp3';
   // static const String _loseSound = 'audio/lose.mp3';
-  static const String _clickSound = 'audio/click.mp3';
+  // static const String _clickSound = 'audio/click.mp3'; // Unused: Click is haptics only
   static const String _themeMusic = 'audio/theme.mp3';
 
   Future<void> startMusic() async {
     if (isMusicEnabled) {
       try {
         if (_musicPlayer.state != PlayerState.playing) {
+          await _musicPlayer.setReleaseMode(ReleaseMode.loop);
           await _musicPlayer
-              .setSource(AssetSource(_themeMusic.replaceFirst('assets/', '')));
-          await _musicPlayer.resume();
+              .play(AssetSource(_themeMusic.replaceFirst('assets/', '')));
         }
       } catch (e) {
         // print('Error playing music: $e');
@@ -66,11 +66,22 @@ class AudioManager {
     }
   }
 
-  Future<void> playMove() async {
-    // Attempt to start music if not playing (Fix for autoplay policy)
+  // Helper to force-start music on user interaction (Web Autoplay Fix)
+  Future<void> _ensureMusicPlaying() async {
     if (isMusicEnabled && _musicPlayer.state != PlayerState.playing) {
-      startMusic();
+      try {
+        await _musicPlayer.resume(); // Try resume first
+        if (_musicPlayer.state != PlayerState.playing) {
+          await startMusic(); // Fallback to start
+        }
+      } catch (e) {
+        await startMusic();
+      }
     }
+  }
+
+  Future<void> playMove() async {
+    _ensureMusicPlaying();
 
     if (isSoundEnabled) {
       try {
@@ -129,12 +140,12 @@ class AudioManager {
   }
 
   Future<void> playClick() async {
-    // Attempt to start music if not playing (Fix for autoplay policy)
-    if (isMusicEnabled && _musicPlayer.state != PlayerState.playing) {
-      startMusic();
+    // Priority: Haptics
+    if (isHapticsEnabled) {
+      await HapticFeedback.lightImpact();
     }
 
-    // Haptics ONLY for clicks as requested
-    if (isHapticsEnabled) await HapticFeedback.lightImpact();
+    // Fix: Ensure music starts on click if it was blocked
+    _ensureMusicPlaying();
   }
 }
