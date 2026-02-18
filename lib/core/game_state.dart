@@ -145,6 +145,11 @@ class GameState extends ChangeNotifier {
       _inventory[_currentPlayer]?.remove(_activePowerup);
       _activePowerup = null;
       _selectedAndActiveCell = null; // Clear selection
+
+      // CRITICAL FIX: Check if the player (who still has the turn) ACTUALLY has moves left.
+      // If they used their extra move to fill the last spot, they might be stuck.
+      _checkWinCondition();
+
       notifyListeners();
       return;
     }
