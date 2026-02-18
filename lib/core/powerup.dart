@@ -4,6 +4,7 @@ enum PowerupType {
   extraMove, // Move an additional time this turn
   wallBuilder, // Block any empty tile (Remote Block)
   pathClearer, // Unblock any blocked tile (Remote Unblock)
+  stealthMove, // Move WITHOUT blocking previous tile
 }
 
 class Powerup {
@@ -42,6 +43,13 @@ class Powerup {
       description: "Remove a block from ANY tile.",
       icon: Icons.cleaning_services_rounded,
       color: Colors.tealAccent,
+    ),
+    Powerup(
+      type: PowerupType.stealthMove,
+      name: "Stealth Move",
+      description: "Move without leaving a block behind.",
+      icon: Icons.visibility_off_rounded,
+      color: Colors.blueGrey,
     ),
   ];
 

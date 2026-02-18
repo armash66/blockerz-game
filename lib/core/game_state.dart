@@ -99,6 +99,16 @@ class GameState extends ChangeNotifier {
       case PowerupType.pathClearer:
         success = _applyPathClearer(target);
         break;
+      case PowerupType.stealthMove:
+        // Handled in _performMove (Passive effect during move)
+        // Check if we are selecting a piece? No, it's a toggle.
+        // Actually, just return false here because it doesn't "apply" to a target like wall/clear.
+        // It waits for a move.
+        // BUT wait, applyPowerup return 'false' means it failed?
+        // Ah, applyPowerup is called when tapping a cell?
+        // No, activatePowerup toggles it. applyPowerup is for target selection.
+        success = false;
+        break;
     }
 
     if (success) {
@@ -137,7 +147,16 @@ class GameState extends ChangeNotifier {
     to.occupy(_currentPlayer);
 
     // Block the OLD square (Core Mechanic)
-    from.block();
+    // UNLESS "Stealth Move" is active
+    if (_activePowerup?.type == PowerupType.stealthMove) {
+      // Do NOT block 'from'.
+      // Consume Powerup
+      _inventory[_currentPlayer]?.remove(_activePowerup);
+      _activePowerup = null;
+      notifyListeners(); // Update inventory UI
+    } else {
+      from.block();
+    }
 
     // Check Extra Move
     if (_activePowerup?.type == PowerupType.extraMove) {
