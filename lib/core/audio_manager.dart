@@ -12,53 +12,54 @@ class AudioManager {
   Future<void>? _initFuture;
 
   AudioManager._internal() {
-    _musicPlayer.setReleaseMode(ReleaseMode.loop);
     _initFuture = _init();
   }
 
   Future<void> _init() async {
     try {
-      // SFX Player should be low latency
-      await _sfxPlayer.setPlayerMode(PlayerMode.lowLatency);
-
-      // Context for Music (Requests Focus, allows mixing)
-      final musicContext = AudioContext(
+      // 1. Configure Global Context FIRST (Safe default for mixing)
+      final globalContext = AudioContext(
         iOS: AudioContextIOS(
           category: AVAudioSessionCategory.ambient,
           options: {AVAudioSessionOptions.mixWithOthers},
         ),
         android: AudioContextAndroid(
-          isSpeakerphoneOn: true,
-          stayAwake: true,
-          contentType: AndroidContentType.music,
-          usageType: AndroidUsageType.media,
-          audioFocus: AndroidAudioFocus.gain,
-        ),
-      );
-
-      // Context for SFX (No Focus, never interrupts)
-      final sfxContext = AudioContext(
-        iOS: AudioContextIOS(
-          category: AVAudioSessionCategory.ambient,
-          options: {AVAudioSessionOptions.mixWithOthers},
-        ),
-        android: AudioContextAndroid(
-          isSpeakerphoneOn: true,
+          isSpeakerphoneOn: false,
           stayAwake: false,
           contentType: AndroidContentType.sonification,
-          usageType: AndroidUsageType.assistanceSonification,
-          audioFocus: AndroidAudioFocus.none, // CRITICAL
+          usageType: AndroidUsageType.game,
+          audioFocus: AndroidAudioFocus.none, // Default: no focus theft
         ),
       );
 
-      await _musicPlayer.setAudioContext(musicContext);
-      await _sfxPlayer.setAudioContext(sfxContext);
+      await AudioPlayer.global.setAudioContext(globalContext);
+
+      // 2. Music Player: Needs Focus & Media Content Type
+      await _musicPlayer.setPlayerMode(PlayerMode.mediaPlayer);
+      await _musicPlayer.setReleaseMode(ReleaseMode.loop);
+
+      await _musicPlayer.setAudioContext(globalContext.copyWith(
+        android: globalContext.android.copyWith(
+          contentType: AndroidContentType.music,
+          usageType: AndroidUsageType.media,
+          audioFocus: AndroidAudioFocus.gain, // Music wants focus
+          stayAwake: true,
+        ),
+      ));
+
+      // 3. SFX Player: Strictly NO focus, strictly mixing
+      await _sfxPlayer.setPlayerMode(
+          PlayerMode.mediaPlayer); // Avoid lowLatency bypass issues
+      await _sfxPlayer.setAudioContext(globalContext.copyWith(
+        android: globalContext.android.copyWith(
+          audioFocus: AndroidAudioFocus.none, // CRITICAL: Never steal focus
+        ),
+      ));
     } catch (e) {
-      // Silently fail or log
+      // Silently fail
     }
   }
 
-  // Ensure init is done
   Future<void> ensureInitialized() async => await _initFuture;
 
   // Settings
@@ -66,8 +67,9 @@ class AudioManager {
   bool isSfxEnabled = true;
 
   void toggleMusic() {
-    playClick(); // Feedback for change
     isMusicEnabled = !isMusicEnabled;
+    playClick(); // Tiny feedback
+
     if (isMusicEnabled) {
       startMusic();
     } else {
@@ -77,9 +79,9 @@ class AudioManager {
 
   void toggleSfx() {
     isSfxEnabled = !isSfxEnabled;
-    // Single feedback when turning ON
     if (isSfxEnabled) {
-      playClick(); // Already includes HapticFeedback for ON state
+      HapticFeedback.mediumImpact();
+      playClick();
     }
   }
 
@@ -92,9 +94,10 @@ class AudioManager {
 
   Future<void> startMusic() async {
     if (!isMusicEnabled) return;
-    await ensureInitialized(); // Ensure contexts are set
+    await ensureInitialized();
     try {
       if (_musicPlayer.state != PlayerState.playing) {
+        await _musicPlayer.setVolume(1.0);
         await _musicPlayer.play(AssetSource(_themeMusic));
       }
     } catch (e) {
@@ -110,27 +113,16 @@ class AudioManager {
     }
   }
 
-  // Interaction sounds
   Future<void> playMove() async {
     if (!isSfxEnabled) return;
-    await ensureInitialized();
     HapticFeedback.lightImpact();
-    try {
-      await _sfxPlayer.play(AssetSource(_moveSound));
-    } catch (e) {
-      // Ignore
-    }
+    _playSfx(_moveSound);
   }
 
   Future<void> playBlock() async {
     if (!isSfxEnabled) return;
-    await ensureInitialized();
     HapticFeedback.mediumImpact();
-    try {
-      await _sfxPlayer.play(AssetSource(_blockSound));
-    } catch (e) {
-      // Ignore
-    }
+    _playSfx(_blockSound);
   }
 
   Future<void> playPowerup() async {
@@ -140,13 +132,8 @@ class AudioManager {
 
   Future<void> playWin() async {
     if (!isSfxEnabled) return;
-    await ensureInitialized();
     HapticFeedback.heavyImpact();
-    try {
-      await _sfxPlayer.play(AssetSource(_winSound));
-    } catch (e) {
-      // Ignore
-    }
+    _playSfx(_winSound);
   }
 
   Future<void> playLose() async {
@@ -156,14 +143,20 @@ class AudioManager {
 
   Future<void> playClick() async {
     if (!isSfxEnabled) return;
-    await ensureInitialized();
     HapticFeedback.lightImpact();
+    _playSfx(_clickSound);
+  }
+
+  Future<void> _playSfx(String path) async {
     try {
-      // Avoid overlap stutter on fast clicks
-      if (_sfxPlayer.state == PlayerState.playing) {
-        await _sfxPlayer.stop();
+      await ensureInitialized();
+      // Ensure music is still playing (soft-resume if bumped)
+      if (isMusicEnabled && _musicPlayer.state != PlayerState.playing) {
+        _musicPlayer.resume();
       }
-      await _sfxPlayer.play(AssetSource(_clickSound));
+      await _sfxPlayer
+          .stop(); // Clean stop before play to reset focus state for this player
+      await _sfxPlayer.play(AssetSource(path));
     } catch (e) {
       // Ignore
     }
