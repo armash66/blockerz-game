@@ -36,7 +36,8 @@ class AudioManager {
   }
 
   // Sound Files (Assumes files exist in assets/audio/)
-  // static const String _moveSound = 'audio/move.mp3';
+  static const String _moveSound =
+      'audio/click.mp3'; // Reusing click sound for move as move.mp3 is missing
   static const String _blockSound = 'audio/block.mp3';
   static const String _winSound = 'audio/win.mp3';
   // static const String _loseSound = 'audio/lose.mp3';
@@ -48,7 +49,8 @@ class AudioManager {
       try {
         if (_musicPlayer.state != PlayerState.playing) {
           await _musicPlayer
-              .play(AssetSource(_themeMusic.replaceFirst('assets/', '')));
+              .setSource(AssetSource(_themeMusic.replaceFirst('assets/', '')));
+          await _musicPlayer.resume();
         }
       } catch (e) {
         // print('Error playing music: $e');
@@ -65,10 +67,14 @@ class AudioManager {
   }
 
   Future<void> playMove() async {
-    if (isHapticsEnabled) await HapticFeedback.lightImpact();
+    // Attempt to start music if not playing (Fix for autoplay policy)
+    if (isMusicEnabled && _musicPlayer.state != PlayerState.playing) {
+      startMusic();
+    }
+
     if (isSoundEnabled) {
       try {
-        // await _player.play(AssetSource(_moveSound.replaceFirst('assets/', '')));
+        await _player.play(AssetSource(_moveSound.replaceFirst('assets/', '')));
       } catch (e) {
         // Ignore errors if file not found (common during dev)
         // print('Error playing sound: $e');
@@ -123,14 +129,12 @@ class AudioManager {
   }
 
   Future<void> playClick() async {
-    if (isHapticsEnabled) await HapticFeedback.lightImpact();
-    if (isSoundEnabled) {
-      try {
-        await _player
-            .play(AssetSource(_clickSound.replaceFirst('assets/', '')));
-      } catch (e) {
-        // print('Error playing sound: $e');
-      }
+    // Attempt to start music if not playing (Fix for autoplay policy)
+    if (isMusicEnabled && _musicPlayer.state != PlayerState.playing) {
+      startMusic();
     }
+
+    // Haptics ONLY for clicks as requested
+    if (isHapticsEnabled) await HapticFeedback.lightImpact();
   }
 }
