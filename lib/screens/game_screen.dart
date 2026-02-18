@@ -74,6 +74,7 @@ class _GameScreenState extends State<GameScreen>
   // ...
 
   void _onGameStateChanged() {
+    if (!mounted) return;
     setState(() {});
 
     if (_gameState.isGameOver) {
