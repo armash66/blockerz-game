@@ -15,6 +15,7 @@ class AudioManager {
   }
 
   Future<void> _configureAudioContext() async {
+    // Configures global audio context to allow concurrent playback (mixing)
     final AudioContext audioContext = AudioContext(
       iOS: AudioContextIOS(
         category: AVAudioSessionCategory.ambient,
@@ -27,21 +28,17 @@ class AudioManager {
         stayAwake: true,
         contentType: AndroidContentType.sonification,
         usageType: AndroidUsageType.game,
-        audioFocus: AndroidAudioFocus
-            .none, // Prevent SFX from stopping background music
+        audioFocus:
+            AndroidAudioFocus.none, // CRITICAL: Stop SFX from pausing Music
       ),
     );
+
     await AudioPlayer.global.setAudioContext(audioContext);
   }
 
   // Settings
-  bool isSoundEnabled = true;
   bool isMusicEnabled = true;
-  bool isHapticsEnabled = true;
-
-  void toggleSound() {
-    isSoundEnabled = !isSoundEnabled;
-  }
+  bool isSfxEnabled = true; // Consolidates Sound Effects and Haptics
 
   void toggleMusic() {
     isMusicEnabled = !isMusicEnabled;
@@ -52,9 +49,9 @@ class AudioManager {
     }
   }
 
-  void toggleHaptics() {
-    isHapticsEnabled = !isHapticsEnabled;
-    if (isHapticsEnabled) {
+  void toggleSfx() {
+    isSfxEnabled = !isSfxEnabled;
+    if (isSfxEnabled) {
       HapticFeedback.mediumImpact();
     }
   }
@@ -88,7 +85,7 @@ class AudioManager {
     }
   }
 
-  // Helper for Web/Android focus wake-up
+  // Robust check for Web/Android focus
   Future<void> _ensureMusicPlaying() async {
     if (isMusicEnabled && _musicPlayer.state != PlayerState.playing) {
       try {
@@ -104,8 +101,8 @@ class AudioManager {
 
   Future<void> playMove() async {
     _ensureMusicPlaying();
-    if (isHapticsEnabled) await HapticFeedback.lightImpact();
-    if (isSoundEnabled) {
+    if (isSfxEnabled) {
+      await HapticFeedback.lightImpact();
       try {
         await _player.play(AssetSource(_moveSound.replaceFirst('assets/', '')));
       } catch (e) {
@@ -115,8 +112,8 @@ class AudioManager {
   }
 
   Future<void> playBlock() async {
-    if (isHapticsEnabled) await HapticFeedback.mediumImpact();
-    if (isSoundEnabled) {
+    if (isSfxEnabled) {
+      await HapticFeedback.mediumImpact();
       try {
         await _player
             .play(AssetSource(_blockSound.replaceFirst('assets/', '')));
@@ -127,19 +124,15 @@ class AudioManager {
   }
 
   Future<void> playPowerup() async {
-    if (isHapticsEnabled) await HapticFeedback.mediumImpact();
-    if (isSoundEnabled) {
-      try {
-        // await _player.play(AssetSource(_powerupSound.replaceFirst('assets/', '')));
-      } catch (e) {
-        // print('Error playing sound: $e');
-      }
+    if (isSfxEnabled) {
+      await HapticFeedback.mediumImpact();
+      // Add sound later if requested
     }
   }
 
   Future<void> playWin() async {
-    if (isHapticsEnabled) await HapticFeedback.heavyImpact();
-    if (isSoundEnabled) {
+    if (isSfxEnabled) {
+      await HapticFeedback.heavyImpact();
       try {
         await _player.play(AssetSource(_winSound.replaceFirst('assets/', '')));
       } catch (e) {
@@ -149,20 +142,15 @@ class AudioManager {
   }
 
   Future<void> playLose() async {
-    if (isHapticsEnabled) await HapticFeedback.heavyImpact();
-    if (isSoundEnabled) {
-      try {
-        // await _player.play(AssetSource(_loseSound.replaceFirst('assets/', '')));
-      } catch (e) {
-        // print('Error playing sound: $e');
-      }
+    if (isSfxEnabled) {
+      await HapticFeedback.heavyImpact();
     }
   }
 
   Future<void> playClick() async {
-    if (isHapticsEnabled) await HapticFeedback.lightImpact();
     _ensureMusicPlaying();
-    if (isSoundEnabled) {
+    if (isSfxEnabled) {
+      await HapticFeedback.lightImpact();
       try {
         await _player
             .play(AssetSource(_clickSound.replaceFirst('assets/', '')));

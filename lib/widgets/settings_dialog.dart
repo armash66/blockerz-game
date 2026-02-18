@@ -32,29 +32,16 @@ void showSettingsDialog(BuildContext context) {
                       });
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
 
-                  // SFX Toggle
+                  // SFX & Haptics Toggle
                   _buildSettingRow(
-                    "Sound Effects",
+                    "Sound & Haptics",
                     Icons.volume_up_rounded,
-                    audio.isSoundEnabled,
+                    audio.isSfxEnabled,
                     (val) {
                       setDialogState(() {
-                        audio.toggleSound();
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Haptics Toggle
-                  _buildSettingRow(
-                    "Haptics",
-                    Icons.vibration_rounded,
-                    audio.isHapticsEnabled,
-                    (val) {
-                      setDialogState(() {
-                        audio.toggleHaptics();
+                        audio.toggleSfx();
                       });
                     },
                   ),
