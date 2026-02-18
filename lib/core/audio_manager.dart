@@ -133,9 +133,4 @@ class AudioManager {
       }
     }
   }
-
-  // Test method to verify integration without files
-  void testHaptic() {
-    HapticFeedback.vibrate();
-  }
 }

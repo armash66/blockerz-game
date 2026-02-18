@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/theme_toggle_btn.dart';
+import '../widgets/settings_dialog.dart';
 import 'game_screen.dart';
 import '../core/ai_player.dart'; // Import Difficulty Enum
 import '../core/audio_manager.dart';
@@ -33,6 +34,16 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
           },
         ),
         actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: IconButton(
+              icon: Icon(Icons.settings, color: AppTheme.textPrimary),
+              onPressed: () {
+                AudioManager().playClick();
+                showSettingsDialog(context);
+              },
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: ThemeToggleBtn(onToggle: () => setState(() {})),

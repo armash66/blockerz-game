@@ -3,6 +3,7 @@ import '../core/app_theme.dart';
 import '../core/audio_manager.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/theme_toggle_btn.dart';
+import '../widgets/settings_dialog.dart';
 import 'mode_select_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -104,6 +105,21 @@ class _HomeScreenState extends State<HomeScreen> {
             child: SafeArea(
               // Ensure it respects notch/status bar
               child: ThemeToggleBtn(onToggle: () => setState(() {})),
+            ),
+          ),
+
+          // Settings Button (Top Left)
+          Positioned(
+            top: 24,
+            left: 24,
+            child: SafeArea(
+              child: IconButton(
+                icon: Icon(Icons.settings, color: AppTheme.textPrimary),
+                onPressed: () {
+                  AudioManager().playClick();
+                  showSettingsDialog(context);
+                },
+              ),
             ),
           ),
         ],
