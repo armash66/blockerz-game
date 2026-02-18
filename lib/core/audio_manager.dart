@@ -10,10 +10,33 @@ class AudioManager {
 
   AudioManager._internal() {
     _musicPlayer.setReleaseMode(ReleaseMode.loop);
+    _configureAudioContext();
+  }
+
+  Future<void> _configureAudioContext() async {
+    final AudioContext audioContext = AudioContext(
+      iOS: AudioContextIOS(
+        category: AVAudioSessionCategory.ambient,
+        options: {
+          AVAudioSessionOptions.mixWithOthers,
+        },
+      ),
+      android: AudioContextAndroid(
+        isSpeakerphoneOn: true,
+        stayAwake: true,
+        contentType: AndroidContentType.sonification,
+        usageType: AndroidUsageType.game,
+        audioFocus: AndroidAudioFocus.none, // Prevent stealing focus from music
+      ),
+    );
+    await AudioPlayer.global.setAudioContext(audioContext);
   }
 
   // Settings (Could be moved to a SettingsService later)
   bool isSoundEnabled = true;
+
+  // ... (Settings toggles remain)
+
   bool isMusicEnabled = true;
   bool isHapticsEnabled = true;
 
@@ -82,6 +105,8 @@ class AudioManager {
 
   Future<void> playMove() async {
     _ensureMusicPlaying();
+
+    if (isHapticsEnabled) await HapticFeedback.lightImpact();
 
     if (isSoundEnabled) {
       try {
