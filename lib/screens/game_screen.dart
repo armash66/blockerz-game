@@ -47,14 +47,10 @@ class _GameScreenState extends State<GameScreen>
     );
     _aiPlayer = AIPlayer(difficulty: widget.difficulty);
     _gameState.addListener(_onGameStateChanged);
-
-    // Start Background Music
-    AudioManager().startMusic();
   }
 
   @override
   void dispose() {
-    AudioManager().stopMusic();
     super.dispose();
   }
 
@@ -65,6 +61,7 @@ class _GameScreenState extends State<GameScreen>
     setState(() {});
 
     if (_gameState.isGameOver) {
+      AudioManager().playWin();
       _showGameOverDialog();
     } else {
       // Check for AI Turn

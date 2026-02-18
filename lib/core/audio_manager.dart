@@ -38,7 +38,7 @@ class AudioManager {
   // Sound Files (Assumes files exist in assets/audio/)
   // static const String _moveSound = 'audio/move.mp3';
   static const String _blockSound = 'audio/block.mp3';
-  // static const String _winSound = 'audio/win.mp3';
+  static const String _winSound = 'audio/win.mp3';
   // static const String _loseSound = 'audio/lose.mp3';
   static const String _clickSound = 'audio/click.mp3';
   static const String _themeMusic = 'audio/theme.mp3';
@@ -104,7 +104,7 @@ class AudioManager {
     if (isHapticsEnabled) await HapticFeedback.heavyImpact();
     if (isSoundEnabled) {
       try {
-        // await _player.play(AssetSource(_winSound.replaceFirst('assets/', '')));
+        await _player.play(AssetSource(_winSound.replaceFirst('assets/', '')));
       } catch (e) {
         // print('Error playing sound: $e');
       }
