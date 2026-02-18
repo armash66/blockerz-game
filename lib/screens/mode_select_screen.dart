@@ -17,6 +17,7 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
   bool _powerupsEnabled = false;
   AIDifficulty _selectedDifficulty = AIDifficulty.easy;
   int _boardSize = 5; // 5, 7, 9
+  Duration? _selectedTimeLimit; // Null = No Limit
 
   @override
   Widget build(BuildContext context) {
@@ -325,6 +326,67 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
                         style: AppTheme.body.copyWith(
                             fontSize: 11, color: AppTheme.textSecondary),
                       ),
+
+                      const SizedBox(height: 24),
+
+                      // Time Control Selector
+                      Text(
+                        'TIME CONTROL',
+                        style: AppTheme.body.copyWith(
+                            letterSpacing: 2.0,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 8,
+                        runSpacing: 12,
+                        children: [
+                          null, // No Limit
+                          const Duration(minutes: 1),
+                          const Duration(minutes: 5),
+                          const Duration(minutes: 10),
+                        ].map((duration) {
+                          final isSelected = _selectedTimeLimit == duration;
+                          String label;
+                          if (duration == null) {
+                            label = "∞";
+                          } else {
+                            label = "${duration.inMinutes}m";
+                          }
+
+                          return GestureDetector(
+                            onTap: () =>
+                                setState(() => _selectedTimeLimit = duration),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? AppTheme.accent
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? AppTheme.accent
+                                      : AppTheme.textSecondary.withOpacity(0.3),
+                                ),
+                              ),
+                              child: Text(
+                                label,
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : AppTheme.textSecondary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     ],
                   ),
                 ],
@@ -357,6 +419,7 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
                         enablePowerups: _powerupsEnabled,
                         difficulty: _selectedDifficulty,
                         boardSize: _boardSize,
+                        timeLimit: _selectedTimeLimit,
                       ),
                     ),
                   );

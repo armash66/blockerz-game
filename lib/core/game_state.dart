@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:async'; // For Timer
 import 'board.dart';
 import 'powerup.dart';
 import 'ai_player.dart';
@@ -14,6 +15,11 @@ class GameState extends ChangeNotifier {
 
   // AI Configuration
   AIDifficulty? aiDifficulty; // Null means PvP or Player's turn
+
+  // Time Control
+  Duration? timeLimit; // Null = No Limit
+  final Map<Player, Duration> playerTimes = {};
+  Timer? _timer;
 
   // Game Status
   bool get isGameOver => _winner != null;
@@ -56,9 +62,53 @@ class GameState extends ChangeNotifier {
   List<Powerup> getPlayerInventory(Player p) => _inventory[p] ?? [];
   Powerup? get activePowerup => _activePowerup;
 
-  GameState({this.boardSize = 5, this.aiDifficulty})
+  GameState({this.boardSize = 5, this.aiDifficulty, this.timeLimit})
       : grid = _createGrid(boardSize) {
     _initializePieces();
+    _initializeTimers();
+  }
+
+  void _initializeTimers() {
+    if (timeLimit != null) {
+      playerTimes[Player.player1] = timeLimit!;
+      playerTimes[Player.player2] = timeLimit!;
+      _startTimer();
+    }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    if (timeLimit == null || isGameOver) return;
+
+    // Don't run timer for AI? Actually, chess clocks run for bots too usually.
+    // But for now let's run it for both.
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final current = playerTimes[_currentPlayer]!;
+      if (current.inSeconds > 0) {
+        playerTimes[_currentPlayer] = current - const Duration(seconds: 1);
+        notifyListeners();
+      } else {
+        _onTimeOut();
+      }
+    });
+  }
+
+  void _stopTimer() {
+    _timer?.cancel();
+  }
+
+  void _onTimeOut() {
+    _timer?.cancel();
+    // Current player ran out of time -> Opponent wins
+    _winner = _currentPlayer.opponent;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   // Powerup: Add to Inventory & Complete Selection
@@ -186,6 +236,11 @@ class GameState extends ChangeNotifier {
     // Switch to Next Player
     _currentPlayer = _currentPlayer.opponent;
     _powerupSelectedThisTurn = false;
+
+    // Switch Timer
+    if (timeLimit != null && !isGameOver) {
+      _startTimer();
+    }
 
     // Check AI Hard Powerup Grant (Now checking the NEW player who just started)
     if (_currentPlayer == Player.player2 && aiDifficulty == AIDifficulty.hard) {

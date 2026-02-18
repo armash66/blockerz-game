@@ -14,14 +14,16 @@ class GameScreen extends StatefulWidget {
   final bool isPvAI;
   final bool enablePowerups;
   final AIDifficulty difficulty;
-  final int boardSize; // Added
+  final int boardSize;
+  final Duration? timeLimit; // Added
 
   const GameScreen({
     super.key,
     required this.isPvAI,
     required this.enablePowerups,
     this.difficulty = AIDifficulty.easy,
-    this.boardSize = 5, // Default
+    this.boardSize = 5,
+    this.timeLimit,
   });
 
   @override
@@ -35,7 +37,10 @@ class _GameScreenState extends State<GameScreen> {
   @override
   void initState() {
     super.initState();
-    _gameState = GameState(boardSize: widget.boardSize); // Pass size
+    _gameState = GameState(
+      boardSize: widget.boardSize,
+      timeLimit: widget.timeLimit,
+    );
     _aiPlayer = AIPlayer(difficulty: widget.difficulty);
     _gameState.addListener(_onGameStateChanged);
   }
@@ -392,6 +397,20 @@ class _GameScreenState extends State<GameScreen> {
                 Text(name, style: AppTheme.heading.copyWith(fontSize: 16)),
               ],
             ),
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: _getPlayerColor(player),
+                  radius: 8,
+                ),
+                const SizedBox(width: 12),
+                Text(name, style: AppTheme.heading.copyWith(fontSize: 16)),
+                if (_gameState.timeLimit != null) ...[
+                  const SizedBox(width: 12),
+                  _buildTimer(player),
+                ],
+              ],
+            ),
             if (isTurn)
               Container(
                 padding:
@@ -516,9 +535,39 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  Widget _buildTimer(Player player) {
+    final duration = _gameState.playerTimes[player] ?? Duration.zero;
+    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final isTurn = _gameState.currentPlayer == player;
+
+    // Changing color when low on time (< 10 seconds)
+    final isLowTime = duration.inSeconds <= 10;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isLowTime
+              ? Colors.redAccent
+              : (isTurn ? AppTheme.accent : Colors.white12),
+        ),
+      ),
+      child: Text(
+        "$minutes:$seconds",
+        style: TextStyle(
+          color: isLowTime ? Colors.redAccent : AppTheme.textPrimary,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Courier', // Monospace for numbers
+        ),
+      ),
+    );
+  }
+
   Color _getPlayerColor(Player p) {
     final theme = AppTheme.currentBoardTheme;
     return p == Player.player1 ? theme.player1Color : theme.player2Color;
   }
 }
-
