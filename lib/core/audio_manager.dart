@@ -5,6 +5,7 @@ class AudioManager {
   // Singleton pattern
   static final AudioManager _instance = AudioManager._internal();
   factory AudioManager() => _instance;
+
   final AudioPlayer _player = AudioPlayer();
   final AudioPlayer _musicPlayer = AudioPlayer();
 
@@ -26,17 +27,15 @@ class AudioManager {
         stayAwake: true,
         contentType: AndroidContentType.sonification,
         usageType: AndroidUsageType.game,
-        audioFocus: AndroidAudioFocus.none, // Prevent stealing focus from music
+        audioFocus: AndroidAudioFocus
+            .none, // Prevent SFX from stopping background music
       ),
     );
     await AudioPlayer.global.setAudioContext(audioContext);
   }
 
-  // Settings (Could be moved to a SettingsService later)
+  // Settings
   bool isSoundEnabled = true;
-
-  // ... (Settings toggles remain)
-
   bool isMusicEnabled = true;
   bool isHapticsEnabled = true;
 
@@ -55,16 +54,16 @@ class AudioManager {
 
   void toggleHaptics() {
     isHapticsEnabled = !isHapticsEnabled;
-    if (isHapticsEnabled) HapticFeedback.mediumImpact();
+    if (isHapticsEnabled) {
+      HapticFeedback.mediumImpact();
+    }
   }
 
-  // Sound Files (Assumes files exist in assets/audio/)
-  static const String _moveSound =
-      'audio/click.mp3'; // Reusing click sound for move as move.mp3 is missing
+  // Sound Files
+  static const String _moveSound = 'audio/click.mp3';
   static const String _blockSound = 'audio/block.mp3';
   static const String _winSound = 'audio/win.mp3';
-  // static const String _loseSound = 'audio/lose.mp3';
-  // static const String _clickSound = 'audio/click.mp3'; // Unused: Click is haptics only
+  static const String _clickSound = 'audio/click.mp3';
   static const String _themeMusic = 'audio/theme.mp3';
 
   Future<void> startMusic() async {
@@ -89,13 +88,13 @@ class AudioManager {
     }
   }
 
-  // Helper to force-start music on user interaction (Web Autoplay Fix)
+  // Helper for Web/Android focus wake-up
   Future<void> _ensureMusicPlaying() async {
     if (isMusicEnabled && _musicPlayer.state != PlayerState.playing) {
       try {
-        await _musicPlayer.resume(); // Try resume first
+        await _musicPlayer.resume();
         if (_musicPlayer.state != PlayerState.playing) {
-          await startMusic(); // Fallback to start
+          await startMusic();
         }
       } catch (e) {
         await startMusic();
@@ -105,14 +104,11 @@ class AudioManager {
 
   Future<void> playMove() async {
     _ensureMusicPlaying();
-
     if (isHapticsEnabled) await HapticFeedback.lightImpact();
-
     if (isSoundEnabled) {
       try {
         await _player.play(AssetSource(_moveSound.replaceFirst('assets/', '')));
       } catch (e) {
-        // Ignore errors if file not found (common during dev)
         // print('Error playing sound: $e');
       }
     }
@@ -134,8 +130,7 @@ class AudioManager {
     if (isHapticsEnabled) await HapticFeedback.mediumImpact();
     if (isSoundEnabled) {
       try {
-        // await _player
-        //     .play(AssetSource(_powerupSound.replaceFirst('assets/', '')));
+        // await _player.play(AssetSource(_powerupSound.replaceFirst('assets/', '')));
       } catch (e) {
         // print('Error playing sound: $e');
       }
@@ -165,12 +160,15 @@ class AudioManager {
   }
 
   Future<void> playClick() async {
-    // Priority: Haptics
-    if (isHapticsEnabled) {
-      await HapticFeedback.lightImpact();
-    }
-
-    // Fix: Ensure music starts on click if it was blocked
+    if (isHapticsEnabled) await HapticFeedback.lightImpact();
     _ensureMusicPlaying();
+    if (isSoundEnabled) {
+      try {
+        await _player
+            .play(AssetSource(_clickSound.replaceFirst('assets/', '')));
+      } catch (e) {
+        // print('Error playing sound: $e');
+      }
+    }
   }
 }
