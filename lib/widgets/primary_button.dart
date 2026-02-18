@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
+import '../core/audio_manager.dart';
 
 class PrimaryButton extends StatelessWidget {
   final String label;
@@ -16,7 +17,10 @@ class PrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      onPressed: onPressed,
+      onPressed: () {
+        AudioManager().playClick();
+        onPressed();
+      },
       style: ElevatedButton.styleFrom(
         backgroundColor: AppTheme.accent,
         foregroundColor: Colors.white,

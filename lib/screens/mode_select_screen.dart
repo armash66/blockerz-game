@@ -4,6 +4,7 @@ import '../widgets/glass_card.dart';
 import '../widgets/theme_toggle_btn.dart';
 import 'game_screen.dart';
 import '../core/ai_player.dart'; // Import Difficulty Enum
+import '../core/audio_manager.dart';
 
 class ModeSelectScreen extends StatefulWidget {
   const ModeSelectScreen({super.key});
@@ -26,7 +27,10 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
         title: const Text('NEW GAME'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            AudioManager().playClick();
+            Navigator.pop(context);
+          },
         ),
         actions: [
           Padding(
@@ -93,8 +97,11 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
                             children: [
                               Expanded(
                                 child: GestureDetector(
-                                  onTap: () => setState(() =>
-                                      _selectedDifficulty = AIDifficulty.easy),
+                                  onTap: () {
+                                    AudioManager().playClick();
+                                    setState(() => _selectedDifficulty =
+                                        AIDifficulty.easy);
+                                  },
                                   child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 200),
                                     padding: const EdgeInsets.symmetric(
@@ -123,8 +130,11 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
                               ),
                               Expanded(
                                 child: GestureDetector(
-                                  onTap: () => setState(() =>
-                                      _selectedDifficulty = AIDifficulty.hard),
+                                  onTap: () {
+                                    AudioManager().playClick();
+                                    setState(() => _selectedDifficulty =
+                                        AIDifficulty.hard);
+                                  },
                                   child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 200),
                                     padding: const EdgeInsets.symmetric(
@@ -165,8 +175,10 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
 
                   // Powerups Toggle
                   GlassCard(
-                    onTap: () =>
-                        setState(() => _powerupsEnabled = !_powerupsEnabled),
+                    onTap: () {
+                      AudioManager().playClick();
+                      setState(() => _powerupsEnabled = !_powerupsEnabled);
+                    },
                     child: Row(
                       children: [
                         Icon(
@@ -224,8 +236,11 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
                             final isSelected =
                                 AppTheme.currentBoardTheme == theme;
                             return GestureDetector(
-                              onTap: () => setState(
-                                  () => AppTheme.currentBoardTheme = theme),
+                              onTap: () {
+                                AudioManager().playClick();
+                                setState(
+                                    () => AppTheme.currentBoardTheme = theme);
+                              },
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
                                 margin:
@@ -286,7 +301,10 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
                           final isSelected = _boardSize == size;
 
                           return GestureDetector(
-                            onTap: () => setState(() => _boardSize = size),
+                            onTap: () {
+                              AudioManager().playClick();
+                              setState(() => _boardSize = size);
+                            },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
                               margin: const EdgeInsets.symmetric(horizontal: 6),
@@ -357,8 +375,10 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
                           }
 
                           return GestureDetector(
-                            onTap: () =>
-                                setState(() => _selectedTimeLimit = duration),
+                            onTap: () {
+                              AudioManager().playClick();
+                              setState(() => _selectedTimeLimit = duration);
+                            },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
                               padding: const EdgeInsets.symmetric(
@@ -411,6 +431,7 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
                   shadowColor: AppTheme.accent.withOpacity(0.4),
                 ),
                 onPressed: () {
+                  AudioManager().playClick();
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -444,7 +465,10 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
   Widget _buildModeBtn(int index, String label, IconData icon) {
     final isSelected = _selectedMode == index;
     return GestureDetector(
-      onTap: () => setState(() => _selectedMode = index),
+      onTap: () {
+        AudioManager().playClick();
+        setState(() => _selectedMode = index);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.symmetric(horizontal: 4),

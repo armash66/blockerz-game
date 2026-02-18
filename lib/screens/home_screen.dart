@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
+import '../core/audio_manager.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/theme_toggle_btn.dart';
 import 'mode_select_screen.dart';
@@ -78,7 +79,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     // Secondary Action (Rules)
                     TextButton(
-                      onPressed: _showRules,
+                      onPressed: () {
+                        AudioManager().playClick();
+                        _showRules();
+                      },
                       child: Text(
                         'HOW TO PLAY',
                         style: AppTheme.body.copyWith(

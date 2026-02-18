@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
+import '../core/audio_manager.dart';
 
 class ThemeToggleBtn extends StatelessWidget {
   final VoidCallback onToggle;
@@ -14,6 +15,7 @@ class ThemeToggleBtn extends StatelessWidget {
           true, // Make it smaller for game screens? Or keep regular. Let's keep regular but maybe bottom right.
       backgroundColor: AppTheme.accent,
       onPressed: () {
+        AudioManager().playClick();
         AppTheme.toggleTheme();
         onToggle(); // Notify parent to rebuild
 
