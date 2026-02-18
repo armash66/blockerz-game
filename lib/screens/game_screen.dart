@@ -173,6 +173,25 @@ class _GameScreenState extends State<GameScreen> {
                           ),
                         ],
                       ),
+                      const Spacer(),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.undo),
+                            color: AppTheme.textPrimary,
+                            onPressed:
+                                _gameState.canUndo ? _gameState.undo : null,
+                            tooltip: "Undo",
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.redo),
+                            color: AppTheme.textPrimary,
+                            onPressed:
+                                _gameState.canRedo ? _gameState.redo : null,
+                            tooltip: "Redo",
+                          ),
+                        ],
+                      ),
                       ThemeToggleBtn(onToggle: () => setState(() {})),
                     ],
                   ),

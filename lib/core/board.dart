@@ -42,4 +42,25 @@ class Cell {
     type = CellType.empty;
     owner = null;
   }
+
+  // Snapshot Helpers
+  CellState saveState() {
+    return CellState(owner, isBlocked, false);
+  }
+
+  void copyFrom(CellState state) {
+    type = state.isBlocked
+        ? CellType.blocked
+        : (state.owner != null ? CellType.occupied : CellType.empty);
+    owner = state.owner;
+    // Selection is transient, don't restore
+  }
+}
+
+class CellState {
+  final Player? owner;
+  final bool isBlocked;
+  final bool isSelected;
+
+  CellState(this.owner, this.isBlocked, this.isSelected);
 }

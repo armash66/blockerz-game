@@ -21,18 +21,23 @@ class GameState extends ChangeNotifier {
   final Map<Player, Duration> playerTimes = {};
   Timer? _timer;
 
+  // Undo/Redo History
+  final List<MoveSnapshot> _history = [];
+  int _historyIndex = -1; // Points to the current state in history
+
   // Game Status
   bool get isGameOver => _winner != null;
   Player get currentPlayer => _currentPlayer;
   Player? get winner => _winner;
 
   // Powerup State
-  final Map<Player, int> _turnsPlayed = {
+  // Powerup State
+  Map<Player, int> _turnsPlayed = {
     Player.player1: 0,
     Player.player2: 0,
   };
 
-  final Map<Player, List<Powerup>> _inventory = {
+  Map<Player, List<Powerup>> _inventory = {
     Player.player1: [],
     Player.player2: [],
   };
@@ -66,6 +71,7 @@ class GameState extends ChangeNotifier {
       : grid = _createGrid(boardSize) {
     _initializePieces();
     _initializeTimers();
+    _saveSnapshot(); // Initial state
   }
 
   void _initializeTimers() {
@@ -258,7 +264,77 @@ class GameState extends ChangeNotifier {
     }
 
     _checkWinCondition();
+    _checkWinCondition();
+
+    // Save Snapshot
+    _saveSnapshot();
+
     notifyListeners();
+  }
+
+  // ------------------------------------------------------------------------
+  // Undo / Redo Logic
+  // ------------------------------------------------------------------------
+
+  bool get canUndo => _historyIndex > 0;
+  bool get canRedo => _historyIndex < _history.length - 1;
+
+  void undo() {
+    if (!canUndo) return;
+    _timer?.cancel();
+    _historyIndex--;
+    _restoreSnapshot(_history[_historyIndex]);
+    _startTimer();
+    notifyListeners();
+  }
+
+  void redo() {
+    if (!canRedo) return;
+    _timer?.cancel();
+    _historyIndex++;
+    _restoreSnapshot(_history[_historyIndex]);
+    _startTimer();
+    notifyListeners();
+  }
+
+  void _saveSnapshot() {
+    if (_historyIndex < _history.length - 1) {
+      _history.removeRange(_historyIndex + 1, _history.length);
+    }
+
+    _history.add(MoveSnapshot(
+      grid: grid,
+      currentPlayer: currentPlayer,
+      inventory: _inventory,
+      turnsPlayed: _turnsPlayed,
+      playerTimes: playerTimes,
+      isGameOver: isGameOver,
+      winner: _winner,
+    ));
+    _historyIndex++;
+  }
+
+  void _restoreSnapshot(MoveSnapshot snapshot) {
+    // Restore Grid
+    for (int r = 0; r < boardSize; r++) {
+      for (int c = 0; c < boardSize; c++) {
+        grid[r][c].copyFrom(snapshot.gridState[r][c]);
+      }
+    }
+
+    _currentPlayer = snapshot.currentPlayer;
+    _turnsPlayed = Map.from(snapshot.turnsPlayed);
+    _winner = snapshot.winner;
+
+    // Restore Inventory (Deep Copy)
+    _inventory = {};
+    snapshot.inventoryState.forEach((key, value) {
+      _inventory[key] = List.from(value);
+    });
+
+    // Restore Timers
+    playerTimes.clear();
+    playerTimes.addAll(snapshot.playerTimes);
   }
 
   // 1. Initialize Grid
@@ -384,4 +460,28 @@ class GameState extends ChangeNotifier {
     // Check if Empty
     return grid[r][c].isEmpty;
   }
+}
+
+class MoveSnapshot {
+  final List<List<CellState>> gridState;
+  final Player currentPlayer;
+  final Map<Player, List<Powerup>> inventoryState;
+  final Map<Player, int> turnsPlayed;
+  final Map<Player, Duration> playerTimes;
+  final bool isGameOver;
+  final Player? winner;
+
+  MoveSnapshot({
+    required List<List<Cell>> grid,
+    required this.currentPlayer,
+    required Map<Player, List<Powerup>> inventory,
+    required Map<Player, int> turnsPlayed,
+    required Map<Player, Duration> playerTimes,
+    required this.isGameOver,
+    this.winner,
+  })  : gridState =
+            grid.map((row) => row.map((c) => c.saveState()).toList()).toList(),
+        inventoryState = inventory.map((k, v) => MapEntry(k, List.from(v))),
+        turnsPlayed = Map.from(turnsPlayed),
+        playerTimes = Map.from(playerTimes);
 }
