@@ -1,5 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 
 class AudioManager {
   // Singleton pattern
@@ -10,49 +11,58 @@ class AudioManager {
   final AudioPlayer _musicPlayer = AudioPlayer();
 
   Future<void>? _initFuture;
+  bool _isMusicLooping = false;
 
   AudioManager._internal() {
     _initFuture = _init();
+
+    // Self-healing: if music stops unexpectedly (e.g. system focus theft), resume it
+    _musicPlayer.onPlayerStateChanged.listen((state) {
+      if (isMusicEnabled && state == PlayerState.paused && _isMusicLooping) {
+        // System likely paused us. Wait a beat and resume.
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (isMusicEnabled && _musicPlayer.state == PlayerState.paused) {
+            _musicPlayer.resume();
+          }
+        });
+      }
+    });
   }
 
   Future<void> _init() async {
     try {
-      // 1. Configure Global Context FIRST (Safe default for mixing)
-      final globalContext = AudioContext(
+      // 1. Music Player Configuration (Gain focus, allow mixing)
+      await _musicPlayer.setPlayerMode(PlayerMode.mediaPlayer);
+      await _musicPlayer.setReleaseMode(ReleaseMode.loop);
+
+      await _musicPlayer.setAudioContext(AudioContext(
         iOS: AudioContextIOS(
           category: AVAudioSessionCategory.ambient,
-          options: {AVAudioSessionOptions.mixWithOthers},
+          options: const {AVAudioSessionOptions.mixWithOthers},
         ),
-        android: AudioContextAndroid(
+        android: const AudioContextAndroid(
+          isSpeakerphoneOn: false,
+          stayAwake: true,
+          contentType: AndroidContentType.music,
+          usageType: AndroidUsageType.game,
+          audioFocus: AndroidAudioFocus.gain,
+        ),
+      ));
+
+      // 2. SFX Player Configuration (DUCK instead of interrupting)
+      await _sfxPlayer.setPlayerMode(PlayerMode.lowLatency);
+      await _sfxPlayer.setAudioContext(AudioContext(
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.ambient,
+          options: const {AVAudioSessionOptions.mixWithOthers},
+        ),
+        android: const AudioContextAndroid(
           isSpeakerphoneOn: false,
           stayAwake: false,
           contentType: AndroidContentType.sonification,
           usageType: AndroidUsageType.game,
-          audioFocus: AndroidAudioFocus.none, // Default: no focus theft
-        ),
-      );
-
-      await AudioPlayer.global.setAudioContext(globalContext);
-
-      // 2. Music Player: Needs Focus & Media Content Type
-      await _musicPlayer.setPlayerMode(PlayerMode.mediaPlayer);
-      await _musicPlayer.setReleaseMode(ReleaseMode.loop);
-
-      await _musicPlayer.setAudioContext(globalContext.copyWith(
-        android: globalContext.android.copyWith(
-          contentType: AndroidContentType.music,
-          usageType: AndroidUsageType.media,
-          audioFocus: AndroidAudioFocus.gain, // Music wants focus
-          stayAwake: true,
-        ),
-      ));
-
-      // 3. SFX Player: Strictly NO focus, strictly mixing
-      await _sfxPlayer.setPlayerMode(
-          PlayerMode.mediaPlayer); // Avoid lowLatency bypass issues
-      await _sfxPlayer.setAudioContext(globalContext.copyWith(
-        android: globalContext.android.copyWith(
-          audioFocus: AndroidAudioFocus.none, // CRITICAL: Never steal focus
+          audioFocus:
+              AndroidAudioFocus.gainTransientMayDuck, // DUCK! No full pause.
         ),
       ));
     } catch (e) {
@@ -68,8 +78,6 @@ class AudioManager {
 
   void toggleMusic() {
     isMusicEnabled = !isMusicEnabled;
-    playClick(); // Tiny feedback
-
     if (isMusicEnabled) {
       startMusic();
     } else {
@@ -97,6 +105,7 @@ class AudioManager {
     await ensureInitialized();
     try {
       if (_musicPlayer.state != PlayerState.playing) {
+        _isMusicLooping = true;
         await _musicPlayer.setVolume(1.0);
         await _musicPlayer.play(AssetSource(_themeMusic));
       }
@@ -106,6 +115,7 @@ class AudioManager {
   }
 
   Future<void> stopMusic() async {
+    _isMusicLooping = false;
     try {
       await _musicPlayer.stop();
     } catch (e) {
@@ -116,13 +126,13 @@ class AudioManager {
   Future<void> playMove() async {
     if (!isSfxEnabled) return;
     HapticFeedback.lightImpact();
-    _playSfx(_moveSound);
+    _playLocalSfx(_moveSound);
   }
 
   Future<void> playBlock() async {
     if (!isSfxEnabled) return;
     HapticFeedback.mediumImpact();
-    _playSfx(_blockSound);
+    _playLocalSfx(_blockSound);
   }
 
   Future<void> playPowerup() async {
@@ -133,7 +143,7 @@ class AudioManager {
   Future<void> playWin() async {
     if (!isSfxEnabled) return;
     HapticFeedback.heavyImpact();
-    _playSfx(_winSound);
+    _playLocalSfx(_winSound);
   }
 
   Future<void> playLose() async {
@@ -144,19 +154,22 @@ class AudioManager {
   Future<void> playClick() async {
     if (!isSfxEnabled) return;
     HapticFeedback.lightImpact();
-    _playSfx(_clickSound);
+    _playLocalSfx(_clickSound);
   }
 
-  Future<void> _playSfx(String path) async {
+  // Improved SFX helper with state-aware music management
+  Future<void> _playLocalSfx(String path) async {
     try {
       await ensureInitialized();
-      // Ensure music is still playing (soft-resume if bumped)
+
+      // On some buggy Android implementations, playing a second stream
+      // might bypass the "duck" configuration. We check music state just in case.
+      await _sfxPlayer.play(AssetSource(path));
+
+      // Post-play check to recover music if the OS force-stopped it
       if (isMusicEnabled && _musicPlayer.state != PlayerState.playing) {
         _musicPlayer.resume();
       }
-      await _sfxPlayer
-          .stop(); // Clean stop before play to reset focus state for this player
-      await _sfxPlayer.play(AssetSource(path));
     } catch (e) {
       // Ignore
     }

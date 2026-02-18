@@ -8,9 +8,7 @@ import '../widgets/primary_button.dart';
 import '../widgets/theme_toggle_btn.dart';
 import '../core/ai_player.dart';
 import '../core/audio_manager.dart';
-// Powerup Model
-import '../widgets/powerup_deck_overlay.dart'; // Overlay Widget
-
+import '../widgets/powerup_deck_overlay.dart';
 import '../widgets/settings_dialog.dart';
 
 class GameScreen extends StatefulWidget {
@@ -49,10 +47,7 @@ class _GameScreenState extends State<GameScreen>
     _gameState.addListener(_onGameStateChanged);
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
+  // ...
 
   // ...
 
@@ -133,6 +128,7 @@ class _GameScreenState extends State<GameScreen>
                     children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                        color: AppTheme.textPrimary,
                         onPressed: () {
                           AudioManager().playClick();
                           Navigator.pop(context);
@@ -446,16 +442,6 @@ class _GameScreenState extends State<GameScreen>
                 ),
                 const SizedBox(width: 12),
                 Text(name, style: AppTheme.heading.copyWith(fontSize: 16)),
-              ],
-            ),
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: _getPlayerColor(player),
-                  radius: 8,
-                ),
-                const SizedBox(width: 12),
-                Text(name, style: AppTheme.heading.copyWith(fontSize: 16)),
                 if (_gameState.timeLimit != null) ...[
                   const SizedBox(width: 12),
                   _buildTimer(player),
@@ -504,7 +490,8 @@ class _GameScreenState extends State<GameScreen>
       // Premium Blocker Design
       cellColor = Colors.transparent; // Let container handle color
       content = Container(
-        margin: const EdgeInsets.all(6), // Matched margin with player (6)
+        margin:
+            const EdgeInsets.all(3), // Reduced margin to make it look bigger
         decoration: BoxDecoration(
             color: const Color(0xFF2C3E50), // Dark Slate
             borderRadius: BorderRadius.circular(8),
@@ -572,9 +559,10 @@ class _GameScreenState extends State<GameScreen>
         // Prevent tapping if it's AI turn (and we are in PvAI mode)
         if (widget.isPvAI && _gameState.currentPlayer == Player.player2) return;
 
-        // PRIORITIZE POWERUP APPLICATION (Except Double Move)
+        // PRIORITIZE POWERUP APPLICATION (Except movement-based ones)
         if (_gameState.activePowerup != null &&
-            _gameState.activePowerup!.type != PowerupType.extraMove) {
+            _gameState.activePowerup!.type != PowerupType.extraMove &&
+            _gameState.activePowerup!.type != PowerupType.stealthMove) {
           _gameState.applyPowerup(cell);
           return;
         }
