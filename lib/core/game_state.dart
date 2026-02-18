@@ -218,7 +218,8 @@ class GameState extends ChangeNotifier {
     // Block the OLD square (Core Mechanic)
     // UNLESS "Stealth Move" is active
     if (_activePowerup?.type == PowerupType.stealthMove) {
-      // Do NOT block 'from'.
+      // CLEAR the old square instead of blocking it
+      from.clear();
       // Consume Powerup
       _inventory[_currentPlayer]?.remove(_activePowerup);
       _activePowerup = null;
