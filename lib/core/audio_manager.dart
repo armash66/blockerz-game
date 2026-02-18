@@ -66,6 +66,7 @@ class AudioManager {
   bool isSfxEnabled = true;
 
   void toggleMusic() {
+    playClick(); // Feedback for change
     isMusicEnabled = !isMusicEnabled;
     if (isMusicEnabled) {
       startMusic();
@@ -76,8 +77,9 @@ class AudioManager {
 
   void toggleSfx() {
     isSfxEnabled = !isSfxEnabled;
+    // Single feedback when turning ON
     if (isSfxEnabled) {
-      HapticFeedback.mediumImpact();
+      playClick(); // Already includes HapticFeedback for ON state
     }
   }
 

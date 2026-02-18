@@ -218,8 +218,10 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
                         Switch(
                           value: _powerupsEnabled,
                           activeColor: AppTheme.accent,
-                          onChanged: (val) =>
-                              setState(() => _powerupsEnabled = val),
+                          onChanged: (val) {
+                            AudioManager().playClick();
+                            setState(() => _powerupsEnabled = val);
+                          },
                         ),
                       ],
                     ),

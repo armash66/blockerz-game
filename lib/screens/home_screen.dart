@@ -148,7 +148,10 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              AudioManager().playClick();
+              Navigator.pop(context);
+            },
             child:
                 const Text("GOT IT", style: TextStyle(color: AppTheme.accent)),
           )

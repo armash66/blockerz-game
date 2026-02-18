@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
 import '../core/powerup.dart';
+import '../core/audio_manager.dart';
 
 import 'dart:math';
 
@@ -54,6 +55,7 @@ class _PowerupDeckOverlayState extends State<PowerupDeckOverlay>
   void _handleDeckTap() {
     if (_isAnimating || _isFlipped) return;
 
+    AudioManager().playClick();
     setState(() {
       _isAnimating = true;
     });
